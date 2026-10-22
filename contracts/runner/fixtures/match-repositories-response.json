@@ -1,0 +1,16 @@
+{
+  "kind": "one",
+  "match": {
+    "repository_id": "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2015",
+    "repository_name": "checkout",
+    "remote_name": "origin",
+    "project": {
+      "id": "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2012",
+      "name": "Checkout"
+    },
+    "team": {
+      "id": "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2013",
+      "name": "Platform"
+    }
+  }
+}

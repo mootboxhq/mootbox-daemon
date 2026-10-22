@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "recorded": {
+      "const": true,
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "recorded"
+  ],
+  "type": "object"
+}

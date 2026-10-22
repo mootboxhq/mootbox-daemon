@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "effective_model": {
+      "maxLength": 200,
+      "type": "string"
+    },
+    "error": {
+      "maxLength": 2000,
+      "type": "string"
+    },
+    "estimated_cost_usd": {
+      "minimum": 0,
+      "type": "number"
+    },
+    "exit": {
+      "additionalProperties": {},
+      "default": {},
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "final_answer": {
+      "maxLength": 20000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "generation": {
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991,
+      "type": "integer"
+    },
+    "outcome": {
+      "enum": [
+        "succeeded",
+        "failed",
+        "cancelled"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "generation",
+    "outcome"
+  ],
+  "type": "object"
+}

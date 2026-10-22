@@ -1,0 +1,8 @@
+{
+  "generation": 1,
+  "type": "checkpoint",
+  "payload": {
+    "commit": "89abcdef0123456789abcdef0123456789abcdef",
+    "summary": "orders client wired"
+  }
+}

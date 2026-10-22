@@ -1,0 +1,6 @@
+{
+  "error": {
+    "category": "lease_lost",
+    "message": "run generation 1 is no longer current"
+  }
+}

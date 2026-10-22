@@ -1,0 +1,6 @@
+{
+  "error": {
+    "category": "upgrade_required",
+    "message": "this Mootbox server speaks runner protocol 6; upgrade mootbox (the Mootbox daemon) and restart it"
+  }
+}

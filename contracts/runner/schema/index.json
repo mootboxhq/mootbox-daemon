@@ -1,0 +1,66 @@
+{
+  "error": "error.json",
+  "protocol_header": "x-mootbox-runner-protocol",
+  "protocol_version": 6,
+  "routes": [
+    {
+      "method": "POST",
+      "request": "start-pairing-request.json",
+      "response": "start-pairing-response.json",
+      "route": "/runner/pairings"
+    },
+    {
+      "method": "POST",
+      "request": "exchange-pairing-request.json",
+      "response": "exchange-pairing-response.json",
+      "route": "/runner/pairings/:pairingId/exchange"
+    },
+    {
+      "method": "POST",
+      "request": "match-repositories-request.json",
+      "response": "match-repositories-response.json",
+      "route": "/runner/repositories/match"
+    },
+    {
+      "method": "POST",
+      "request": "register-repository-request.json",
+      "response": "register-repository-response.json",
+      "route": "/runner/repositories"
+    },
+    {
+      "method": "PUT",
+      "request": "upsert-connection-request.json",
+      "response": "upsert-connection-response.json",
+      "route": "/runner/connections"
+    },
+    {
+      "method": "GET",
+      "response": "health-response.json",
+      "route": "/runner/health"
+    },
+    {
+      "method": "POST",
+      "request": "claim-request.json",
+      "response": "claim-response.json",
+      "route": "/runner/claim"
+    },
+    {
+      "method": "POST",
+      "request": "heartbeat-request.json",
+      "response": "heartbeat-response.json",
+      "route": "/runner/runs/:runId/heartbeat"
+    },
+    {
+      "method": "POST",
+      "request": "run-event-request.json",
+      "response": "run-event-response.json",
+      "route": "/runner/runs/:runId/events"
+    },
+    {
+      "method": "POST",
+      "request": "complete-run-request.json",
+      "response": "complete-run-response.json",
+      "route": "/runner/runs/:runId/complete"
+    }
+  ]
+}

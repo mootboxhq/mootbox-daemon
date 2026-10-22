@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "properties": {
+        "status": {
+          "const": "idle",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "run_ids": {
+          "items": {
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "runs": {
+          "items": {
+            "properties": {
+              "generation": {
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991,
+                "type": "integer"
+              },
+              "run_id": {
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "run_id",
+              "generation"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "status": {
+          "const": "reconcile_required",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "run_ids",
+        "runs"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "run": {
+          "properties": {
+            "branch": {
+              "type": "string"
+            },
+            "chat_id": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            },
+            "connection_id": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            },
+            "generation": {
+              "maximum": 9007199254740991,
+              "minimum": -9007199254740991,
+              "type": "integer"
+            },
+            "lease_expires_at": {
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+              "type": "string"
+            },
+            "manifest": {
+              "properties": {
+                "chat": {
+                  "properties": {
+                    "id": {
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "type": "string"
+                    },
+                    "project_name": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "project_name"
+                  ],
+                  "type": "object"
+                },
+                "context_messages": {
+                  "items": {
+                    "properties": {
+                      "author": {
+                        "type": "string"
+                      },
+                      "author_kind": {
+                        "enum": [
+                          "assistant",
+                          "human"
+                        ],
+                        "type": "string"
+                      },
+                      "body": {
+                        "type": "string"
+                      },
+                      "created_at": {
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                        "type": "string"
+                      },
+                      "id": {
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                        "type": "string"
+                      },
+                      "reply_to_message_id": {
+                        "anyOf": [
+                          {
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "author",
+                      "author_kind",
+                      "body",
+                      "created_at",
+                      "reply_to_message_id"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "instruction": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "permitted_tools": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "provider": {
+                  "enum": [
+                    "claude-code",
+                    "codex"
+                  ],
+                  "type": "string"
+                },
+                "resume": {
+                  "type": "boolean"
+                },
+                "run": {
+                  "properties": {
+                    "branch": {
+                      "type": "string"
+                    },
+                    "generation": {
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    },
+                    "id": {
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "generation",
+                    "branch"
+                  ],
+                  "type": "object"
+                },
+                "session_key": {
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                  "type": "string"
+                },
+                "target": {
+                  "properties": {
+                    "base_ref": {
+                      "type": "string"
+                    },
+                    "remote_url": {
+                      "type": "string"
+                    },
+                    "repository_id": {
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "repository_id",
+                    "remote_url",
+                    "base_ref"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "run",
+                "chat",
+                "provider",
+                "instruction",
+                "context_messages",
+                "target",
+                "session_key",
+                "resume",
+                "permitted_tools"
+              ],
+              "type": "object"
+            },
+            "manifest_hash": {
+              "type": "string"
+            },
+            "provider": {
+              "enum": [
+                "claude-code",
+                "codex"
+              ],
+              "type": "string"
+            },
+            "repository_id": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            },
+            "run_id": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "type": "string"
+            },
+            "run_token": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "run_id",
+            "chat_id",
+            "generation",
+            "branch",
+            "lease_expires_at",
+            "run_token",
+            "provider",
+            "connection_id",
+            "repository_id",
+            "manifest",
+            "manifest_hash"
+          ],
+          "type": "object"
+        },
+        "status": {
+          "const": "claimed",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "run"
+      ],
+      "type": "object"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "remotes": [
+    {
+      "name": "origin",
+      "url": "git@github.com:acme/checkout.git"
+    },
+    {
+      "name": "upstream",
+      "url": "https://github.com/acme/platform.git"
+    }
+  ]
+}

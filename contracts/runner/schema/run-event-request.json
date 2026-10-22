@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "generation": {
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991,
+      "type": "integer"
+    },
+    "payload": {
+      "additionalProperties": {},
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "type": {
+      "enum": [
+        "checkpoint",
+        "progress"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "generation",
+    "type",
+    "payload"
+  ],
+  "type": "object"
+}

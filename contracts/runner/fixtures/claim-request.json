@@ -1,0 +1,10 @@
+{
+  "providers": [
+    "claude-code"
+  ],
+  "capacity": 1,
+  "active_run_ids": [
+    "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2018"
+  ],
+  "wait_ms": 25000
+}

@@ -1,0 +1,6 @@
+{
+  "error": {
+    "category": "repository_not_found",
+    "message": "Ask a workspace maintainer to add checkout, or connect a repo already in this project."
+  }
+}

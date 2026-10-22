@@ -1,0 +1,9 @@
+{
+  "remote_url": "git@github.com:acme/brand-new.git",
+  "name": "brand-new",
+  "default_branch": "main",
+  "new_project": {
+    "team_id": "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2013",
+    "name": "Brand new"
+  }
+}
