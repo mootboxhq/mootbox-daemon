@@ -111,7 +111,7 @@ async fn mootbox_connect_is_a_hidden_alias_of_add() {
 }
 
 #[test]
-fn help_leads_with_add_and_hides_the_old_commands() {
+fn help_leads_with_add_lists_pair_and_hides_the_old_commands() {
     let home = tempfile::tempdir().expect("temp dir");
 
     let output = mootbox_command(home.path(), home.path(), &["--help"])
@@ -125,7 +125,8 @@ fn help_leads_with_add_and_hides_the_old_commands() {
         .nth(1)
         .expect("a command is listed");
     assert!(first_command.trim_start().starts_with("add "), "{help}");
-    for hidden in ["  pair ", "  connect ", "  bind ", "  agents "] {
+    assert!(help.contains("  pair "), "{help}");
+    for hidden in ["  connect ", "  bind ", "  agents "] {
         assert!(!help.contains(hidden), "{help}");
     }
 }

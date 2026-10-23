@@ -1,3 +1,4 @@
+use std::io::IsTerminal;
 use std::process::ExitCode;
 use std::sync::LazyLock;
 
@@ -69,12 +70,18 @@ enum DaemonCommand {
         #[command(flatten)]
         start: StartArgs,
     },
-    #[command(hide = true, about = "Pair this machine with a Mootbox server")]
+    #[command(about = "Pair this machine with a Mootbox server")]
     Pair {
         #[arg(long)]
         mootbox_url: Url,
         #[arg(long, help = "Device name shown in Mootbox [default: this machine's hostname]")]
         name: Option<String>,
+        #[arg(
+            long,
+            value_parser = NonEmptyStringValueParser::new(),
+            help = "Pairing code from the Devices page [default: ask, or print a code to enter on the web]"
+        )]
+        code: Option<String>,
     },
     #[command(
         hide = true,
@@ -146,10 +153,15 @@ async fn execute(command: DaemonCommand) -> Result<Output> {
             commands::add::run(&home, request, &TerminalConsole).await?;
             Ok(Output::default())
         }
-        DaemonCommand::Pair { mootbox_url, name } => {
+        DaemonCommand::Pair {
+            mootbox_url,
+            name,
+            code,
+        } => {
             let options = PairOptions {
                 mootbox_url,
                 device_name: name.unwrap_or_else(default_device_name),
+                code: code.map_or_else(prompted_pairing_code, |code| Ok(Some(code)))?,
                 poll_interval: PAIRING_POLL_INTERVAL,
             };
             commands::pair::run(&home, &options, &TerminalConsole).await
@@ -208,6 +220,13 @@ fn positive_amount(text: &str) -> Result<f64, String> {
 fn provider_kind(text: &str) -> Result<ProviderKind, String> {
     text.parse()
         .map_err(|error: providers::UnknownProvider| error.to_string())
+}
+
+fn prompted_pairing_code() -> Result<Option<String>> {
+    if !std::io::stdin().is_terminal() {
+        return Ok(None);
+    }
+    commands::pair::read_pairing_code(&mut std::io::stdin().lock(), &mut std::io::stderr())
 }
 
 fn default_device_name() -> String {

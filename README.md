@@ -20,6 +20,8 @@ cd ~/code/checkout
 mootbox add --mootbox-url https://mootbox.example.com
 ```
 
+To pair a device on its own, create a code with **Pair a device** on the Devices page and run `mootbox pair --mootbox-url https://mootbox.example.com --code ABCD-EFGH`. Without `--code`, `mootbox pair` asks for one, or prints a code to enter on the web when you leave it empty.
+
 Use the Mootbox server URL configured for your environment. The person running the daemon must install and authenticate supported CLIs using their own provider flows. Mootbox does not collect provider credentials. The daemon stores its configuration under `~/.mootbox`; set `MOOTBOX_DAEMON_HOME` to use a separate profile/home.
 
 Useful commands:
@@ -40,7 +42,7 @@ The daemon claims work for the local user's own connected checkout and selected 
 
 Provider session IDs stay on the local machine. Mootbox sends an opaque session key; the daemon stores its mapping to the provider session in owner-only files and resumes it after restart. If that local session is missing or cannot resume, the run reports the failure. The user can explicitly start a fresh session from the shared chat history.
 
-Mootbox's runner API and this daemon use **protocol 8** (`x-mootbox-runner-protocol: 8`). Update the server and daemon together. Contracts are vendored in `contracts/runner/` and their generated Rust types are in `src/contracts.rs`.
+Mootbox's runner API and this daemon use **protocol 9** (`x-mootbox-runner-protocol: 9`). Update the server and daemon together. Contracts are vendored in `contracts/runner/` and their generated Rust types are in `src/contracts.rs`.
 
 ## Code map
 

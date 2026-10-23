@@ -5,7 +5,10 @@ use reqwest::Url;
 
 use crate::api::MootboxClient;
 use crate::config::WorkspaceProfile;
-use crate::contracts::{ExchangePairingRequest, ExchangePairingResponse, StartPairingRequest, StartPairingResponse};
+use crate::contracts::{
+    ClaimPairingCodeRequest, ExchangePairingRequest, ExchangePairingResponse, StartPairingRequest, StartPairingResponse,
+};
+use crate::device::DeviceReport;
 
 pub const PAIRING_POLL_INTERVAL: Duration = Duration::from_secs(2);
 
@@ -46,4 +49,28 @@ pub async fn pair_device(
             });
         }
     }
+}
+
+pub struct CodeClaim<'a> {
+    pub mootbox_url: &'a Url,
+    pub device_name: &'a str,
+    pub user_code: &'a str,
+    pub device: &'a DeviceReport,
+}
+
+pub async fn claim_pairing_code(claim: &CodeClaim<'_>) -> Result<WorkspaceProfile> {
+    let client = MootboxClient::unauthenticated(claim.mootbox_url.clone());
+    let request = ClaimPairingCodeRequest {
+        user_code: claim.user_code.try_into()?,
+        name: claim.device_name.try_into()?,
+        device: claim.device.contract()?,
+    };
+    let paired = client.claim_pairing_code(&request).await?;
+    Ok(WorkspaceProfile {
+        mootbox_url: claim.mootbox_url.to_string(),
+        workspace_id: paired.workspace_id,
+        runner_id: paired.runner_id,
+        credential: paired.credential,
+        workspace_name: Some(paired.workspace_name),
+    })
 }
