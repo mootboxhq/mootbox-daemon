@@ -8,6 +8,12 @@ use tokio::process::Command;
 
 use crate::private_files::create_private_directory;
 
+mod changes;
+
+pub use changes::{
+    ChangeStatus, ChangedFile, Commit, LineCounts, WorktreeSnapshot, changed_files, commits_since, snapshot_worktree,
+};
+
 const FETCH_SUFFIX: &str = " (fetch)";
 const REMOTE_SEPARATOR: char = '\t';
 const LOCAL_HEAD: &str = "HEAD";
@@ -175,14 +181,22 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<OsStr>,
 {
-    let output = Command::new("git")
-        .arg("-C")
-        .arg(directory)
-        .args(arguments)
-        .stdin(Stdio::null())
-        .output()
-        .await
-        .context("cannot run git")?;
+    let stdout = git_output(git_command(directory, arguments), directory).await?;
+    Ok(String::from_utf8_lossy(&stdout).trim().to_string())
+}
+
+fn git_command<I, S>(directory: &Path, arguments: I) -> Command
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>,
+{
+    let mut command = Command::new("git");
+    command.arg("-C").arg(directory).args(arguments).stdin(Stdio::null());
+    command
+}
+
+async fn git_output(mut command: Command, directory: &Path) -> Result<Vec<u8>> {
+    let output = command.output().await.context("cannot run git")?;
     if !output.status.success() {
         bail!(
             "git failed in {}: {}",
@@ -190,7 +204,7 @@ where
             String::from_utf8_lossy(&output.stderr).trim()
         );
     }
-    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    Ok(output.stdout)
 }
 
 #[cfg(test)]
