@@ -1,0 +1,26 @@
+{
+  "providers": [
+    "claude-code"
+  ],
+  "capacity": 1,
+  "wait_ms": 25000,
+  "device": {
+    "os": "Linux",
+    "os_version": null,
+    "daemon_version": "0.1.0",
+    "providers": [
+      {
+        "name": "claude-code",
+        "installed": true,
+        "version": "2.1.296",
+        "signed_in": true
+      },
+      {
+        "name": "codex",
+        "installed": true,
+        "version": "0.120.0",
+        "signed_in": false
+      }
+    ]
+  }
+}

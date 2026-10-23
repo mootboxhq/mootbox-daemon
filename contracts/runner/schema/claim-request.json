@@ -17,6 +17,86 @@
       "minimum": 0,
       "type": "integer"
     },
+    "device": {
+      "properties": {
+        "daemon_version": {
+          "maxLength": 100,
+          "minLength": 1,
+          "type": "string"
+        },
+        "os": {
+          "enum": [
+            "macOS",
+            "Linux",
+            "Windows",
+            "other"
+          ],
+          "type": "string"
+        },
+        "os_version": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "providers": {
+          "items": {
+            "properties": {
+              "installed": {
+                "type": "boolean"
+              },
+              "name": {
+                "enum": [
+                  "claude-code",
+                  "codex"
+                ],
+                "type": "string"
+              },
+              "signed_in": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "version": {
+                "anyOf": [
+                  {
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "installed",
+              "version",
+              "signed_in"
+            ],
+            "type": "object"
+          },
+          "maxItems": 16,
+          "type": "array"
+        }
+      },
+      "required": [
+        "os",
+        "os_version",
+        "daemon_version",
+        "providers"
+      ],
+      "type": "object"
+    },
     "providers": {
       "items": {
         "enum": [

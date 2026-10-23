@@ -11,15 +11,15 @@ use uuid::Uuid;
 use crate::config::WorkspaceProfile;
 
 use crate::contracts::{
-    ClaimRequest, ClaimResponse, CompleteRunRequest, CompleteRunResponse, Error as ErrorBody, ErrorErrorCategory,
-    ExchangePairingRequest, ExchangePairingResponse, HealthResponse, HeartbeatRequest, HeartbeatResponse,
-    MatchRepositoriesRequest, MatchRepositoriesResponse, RegisterRepositoryRequest, RegisterRepositoryResponse,
-    RunEventRequest, RunEventResponse, StartPairingRequest, StartPairingResponse, UpsertConnectionRequest,
-    UpsertConnectionResponse,
+    ClaimPairingCodeRequest, ClaimPairingCodeResponse, ClaimRequest, ClaimResponse, CompleteRunRequest,
+    CompleteRunResponse, Error as ErrorBody, ErrorErrorCategory, ExchangePairingRequest, ExchangePairingResponse,
+    HealthResponse, HeartbeatRequest, HeartbeatResponse, MatchRepositoriesRequest, MatchRepositoriesResponse,
+    RegisterRepositoryRequest, RegisterRepositoryResponse, RunEventRequest, RunEventResponse, StartPairingRequest,
+    StartPairingResponse, UpsertConnectionRequest, UpsertConnectionResponse,
 };
 
 pub const RUNNER_PROTOCOL_HEADER: &str = "x-mootbox-runner-protocol";
-pub const RUNNER_PROTOCOL_VERSION: u32 = 8;
+pub const RUNNER_PROTOCOL_VERSION: u32 = 9;
 
 const REQUEST_ID_HEADER: &str = "x-request-id";
 const TRACEPARENT_HEADER: &str = "traceparent";
@@ -149,6 +149,14 @@ impl MootboxClient {
 
     pub async fn start_pairing(&self, request: &StartPairingRequest) -> Result<StartPairingResponse, ApiError> {
         self.send(Call::new(Method::POST, "/runner/pairings", request)).await
+    }
+
+    pub async fn claim_pairing_code(
+        &self,
+        request: &ClaimPairingCodeRequest,
+    ) -> Result<ClaimPairingCodeResponse, ApiError> {
+        self.send(Call::new(Method::POST, "/runner/pairings/claim-code", request))
+            .await
     }
 
     pub async fn exchange_pairing(

@@ -75,7 +75,10 @@ macro_rules! round_trip_tests {
 const MINIMAL_CLAIM_REQUEST: &str = "claim-request.minimal.json";
 
 round_trip_tests! {
+    claim_pairing_code_request: "claim-pairing-code-request.json" => ClaimPairingCodeRequest,
+    claim_pairing_code_response: "claim-pairing-code-response.json" => ClaimPairingCodeResponse,
     claim_request: "claim-request.json" => ClaimRequest,
+    claim_request_with_device: "claim-request.with-device.json" => ClaimRequest,
     claim_response_claimed_execute: "claim-response.claimed-execute.json" => ClaimResponse,
     claim_response_claimed_execute_with_context: "claim-response.claimed-execute.with-context.json" => ClaimResponse,
     claim_response_idle: "claim-response.idle.json" => ClaimResponse,
@@ -84,6 +87,7 @@ round_trip_tests! {
     complete_run_request_with_changes: "complete-run-request.with-changes.json" => CompleteRunRequest,
     complete_run_response: "complete-run-response.json" => CompleteRunResponse,
     error_lease_lost: "error.lease-lost.json" => Error,
+    error_rate_limited: "error.rate-limited.json" => Error,
     error_repository_not_found: "error.repository-not-found.json" => Error,
     error_upgrade_required: "error.upgrade-required.json" => Error,
     exchange_pairing_request: "exchange-pairing-request.json" => ExchangePairingRequest,

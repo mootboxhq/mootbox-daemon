@@ -186,7 +186,7 @@ async fn a_healthy_machine_passes_every_check_without_claiming_work() {
         report.line(&format!("repository {repository_id}")),
         format!("ok   repository {repository_id}: {} (remote: origin)", path.display())
     );
-    assert_eq!(report.line("protocol"), "ok   protocol: runner protocol 8 accepted");
+    assert_eq!(report.line("protocol"), "ok   protocol: runner protocol 9 accepted");
     assert!(report.line("clock").starts_with("ok   clock: within "));
     assert_eq!(report.line("service"), "ok   service: installed and loaded, running");
     assert_eq!(server.received_requests().await.expect("recording").len(), 1);
@@ -257,7 +257,7 @@ async fn a_server_without_the_health_route_warns_and_reads_the_clock_from_the_da
         "{}",
         report.line("server")
     );
-    assert_eq!(report.line("protocol"), "ok   protocol: runner protocol 8 accepted");
+    assert_eq!(report.line("protocol"), "ok   protocol: runner protocol 9 accepted");
     assert!(
         report.line("clock").contains("behind the server"),
         "{}",

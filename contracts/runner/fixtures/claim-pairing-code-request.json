@@ -1,0 +1,23 @@
+{
+  "user_code": "ABCD-EFGH",
+  "name": "maya-laptop",
+  "device": {
+    "os": "macOS",
+    "os_version": "15.1",
+    "daemon_version": "0.1.0",
+    "providers": [
+      {
+        "name": "claude-code",
+        "installed": true,
+        "version": "2.1.296",
+        "signed_in": true
+      },
+      {
+        "name": "codex",
+        "installed": false,
+        "version": null,
+        "signed_in": null
+      }
+    ]
+  }
+}

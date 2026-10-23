@@ -1,0 +1,6 @@
+{
+  "error": {
+    "category": "rate_limited",
+    "message": "too many pairing attempts; wait a minute and try again"
+  }
+}

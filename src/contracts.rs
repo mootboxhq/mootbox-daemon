@@ -1,13 +1,606 @@
 #![allow(clippy::unwrap_used)]
 #[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct ClaimPairingCodeRequest {
+    pub device: ClaimPairingCodeRequestDevice,
+    pub name: ClaimPairingCodeRequestName,
+    pub user_code: ClaimPairingCodeRequestUserCode,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct ClaimPairingCodeRequestDevice {
+    pub daemon_version: ClaimPairingCodeRequestDeviceDaemonVersion,
+    pub os: ClaimPairingCodeRequestDeviceOs,
+    #[serde(deserialize_with = "::std::option::Option::deserialize")]
+    pub os_version: ::std::option::Option<ClaimPairingCodeRequestDeviceOsVersion>,
+    pub providers: ::std::vec::Vec<ClaimPairingCodeRequestDeviceProvidersItem>,
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ClaimPairingCodeRequestDeviceDaemonVersion(::std::string::String);
+impl ::std::ops::Deref for ClaimPairingCodeRequestDeviceDaemonVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ClaimPairingCodeRequestDeviceDaemonVersion> for ::std::string::String {
+    fn from(value: ClaimPairingCodeRequestDeviceDaemonVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ClaimPairingCodeRequestDeviceDaemonVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClaimPairingCodeRequestDeviceDaemonVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClaimPairingCodeRequestDeviceDaemonVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ClaimPairingCodeRequestDeviceDaemonVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum ClaimPairingCodeRequestDeviceOs {
+    #[serde(rename = "macOS")]
+    MacOs,
+    Linux,
+    Windows,
+    #[serde(rename = "other")]
+    Other,
+}
+impl ::std::fmt::Display for ClaimPairingCodeRequestDeviceOs {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::MacOs => f.write_str("macOS"),
+            Self::Linux => f.write_str("Linux"),
+            Self::Windows => f.write_str("Windows"),
+            Self::Other => f.write_str("other"),
+        }
+    }
+}
+impl ::std::str::FromStr for ClaimPairingCodeRequestDeviceOs {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "macOS" => Ok(Self::MacOs),
+            "Linux" => Ok(Self::Linux),
+            "Windows" => Ok(Self::Windows),
+            "other" => Ok(Self::Other),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClaimPairingCodeRequestDeviceOs {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClaimPairingCodeRequestDeviceOs {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ClaimPairingCodeRequestDeviceOsVersion(::std::string::String);
+impl ::std::ops::Deref for ClaimPairingCodeRequestDeviceOsVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ClaimPairingCodeRequestDeviceOsVersion> for ::std::string::String {
+    fn from(value: ClaimPairingCodeRequestDeviceOsVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ClaimPairingCodeRequestDeviceOsVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClaimPairingCodeRequestDeviceOsVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClaimPairingCodeRequestDeviceOsVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ClaimPairingCodeRequestDeviceOsVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct ClaimPairingCodeRequestDeviceProvidersItem {
+    pub installed: bool,
+    pub name: ClaimPairingCodeRequestDeviceProvidersItemName,
+    #[serde(deserialize_with = "::std::option::Option::deserialize")]
+    pub signed_in: ::std::option::Option<bool>,
+    #[serde(deserialize_with = "::std::option::Option::deserialize")]
+    pub version: ::std::option::Option<ClaimPairingCodeRequestDeviceProvidersItemVersion>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum ClaimPairingCodeRequestDeviceProvidersItemName {
+    #[serde(rename = "claude-code")]
+    ClaudeCode,
+    #[serde(rename = "codex")]
+    Codex,
+}
+impl ::std::fmt::Display for ClaimPairingCodeRequestDeviceProvidersItemName {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::ClaudeCode => f.write_str("claude-code"),
+            Self::Codex => f.write_str("codex"),
+        }
+    }
+}
+impl ::std::str::FromStr for ClaimPairingCodeRequestDeviceProvidersItemName {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "claude-code" => Ok(Self::ClaudeCode),
+            "codex" => Ok(Self::Codex),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClaimPairingCodeRequestDeviceProvidersItemName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClaimPairingCodeRequestDeviceProvidersItemName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ClaimPairingCodeRequestDeviceProvidersItemVersion(::std::string::String);
+impl ::std::ops::Deref for ClaimPairingCodeRequestDeviceProvidersItemVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ClaimPairingCodeRequestDeviceProvidersItemVersion> for ::std::string::String {
+    fn from(value: ClaimPairingCodeRequestDeviceProvidersItemVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ClaimPairingCodeRequestDeviceProvidersItemVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClaimPairingCodeRequestDeviceProvidersItemVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClaimPairingCodeRequestDeviceProvidersItemVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ClaimPairingCodeRequestDeviceProvidersItemVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ClaimPairingCodeRequestName(::std::string::String);
+impl ::std::ops::Deref for ClaimPairingCodeRequestName {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ClaimPairingCodeRequestName> for ::std::string::String {
+    fn from(value: ClaimPairingCodeRequestName) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ClaimPairingCodeRequestName {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClaimPairingCodeRequestName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClaimPairingCodeRequestName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ClaimPairingCodeRequestName {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ClaimPairingCodeRequestUserCode(::std::string::String);
+impl ::std::ops::Deref for ClaimPairingCodeRequestUserCode {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ClaimPairingCodeRequestUserCode> for ::std::string::String {
+    fn from(value: ClaimPairingCodeRequestUserCode) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ClaimPairingCodeRequestUserCode {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 20usize {
+            return Err("longer than 20 characters".into());
+        }
+        if value.chars().count() < 4usize {
+            return Err("shorter than 4 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClaimPairingCodeRequestUserCode {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClaimPairingCodeRequestUserCode {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ClaimPairingCodeRequestUserCode {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct ClaimPairingCodeResponse {
+    pub credential: ::std::string::String,
+    pub runner_id: ::uuid::Uuid,
+    pub workspace_id: ::uuid::Uuid,
+    pub workspace_name: ::std::string::String,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
 pub struct ClaimRequest {
     #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
     pub active_run_ids: ::std::vec::Vec<::uuid::Uuid>,
     #[serde(default = "defaults::default_u64::<i64, 1>")]
     pub capacity: i64,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub device: ::std::option::Option<ClaimRequestDevice>,
     pub providers: ::std::vec::Vec<ClaimRequestProvidersItem>,
     #[serde(default = "defaults::default_u64::<i64, 25000>")]
     pub wait_ms: i64,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct ClaimRequestDevice {
+    pub daemon_version: ClaimRequestDeviceDaemonVersion,
+    pub os: ClaimRequestDeviceOs,
+    #[serde(deserialize_with = "::std::option::Option::deserialize")]
+    pub os_version: ::std::option::Option<ClaimRequestDeviceOsVersion>,
+    pub providers: ::std::vec::Vec<ClaimRequestDeviceProvidersItem>,
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ClaimRequestDeviceDaemonVersion(::std::string::String);
+impl ::std::ops::Deref for ClaimRequestDeviceDaemonVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ClaimRequestDeviceDaemonVersion> for ::std::string::String {
+    fn from(value: ClaimRequestDeviceDaemonVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ClaimRequestDeviceDaemonVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClaimRequestDeviceDaemonVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClaimRequestDeviceDaemonVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ClaimRequestDeviceDaemonVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum ClaimRequestDeviceOs {
+    #[serde(rename = "macOS")]
+    MacOs,
+    Linux,
+    Windows,
+    #[serde(rename = "other")]
+    Other,
+}
+impl ::std::fmt::Display for ClaimRequestDeviceOs {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::MacOs => f.write_str("macOS"),
+            Self::Linux => f.write_str("Linux"),
+            Self::Windows => f.write_str("Windows"),
+            Self::Other => f.write_str("other"),
+        }
+    }
+}
+impl ::std::str::FromStr for ClaimRequestDeviceOs {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "macOS" => Ok(Self::MacOs),
+            "Linux" => Ok(Self::Linux),
+            "Windows" => Ok(Self::Windows),
+            "other" => Ok(Self::Other),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClaimRequestDeviceOs {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClaimRequestDeviceOs {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ClaimRequestDeviceOsVersion(::std::string::String);
+impl ::std::ops::Deref for ClaimRequestDeviceOsVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ClaimRequestDeviceOsVersion> for ::std::string::String {
+    fn from(value: ClaimRequestDeviceOsVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ClaimRequestDeviceOsVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClaimRequestDeviceOsVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClaimRequestDeviceOsVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ClaimRequestDeviceOsVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct ClaimRequestDeviceProvidersItem {
+    pub installed: bool,
+    pub name: ClaimRequestDeviceProvidersItemName,
+    #[serde(deserialize_with = "::std::option::Option::deserialize")]
+    pub signed_in: ::std::option::Option<bool>,
+    #[serde(deserialize_with = "::std::option::Option::deserialize")]
+    pub version: ::std::option::Option<ClaimRequestDeviceProvidersItemVersion>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum ClaimRequestDeviceProvidersItemName {
+    #[serde(rename = "claude-code")]
+    ClaudeCode,
+    #[serde(rename = "codex")]
+    Codex,
+}
+impl ::std::fmt::Display for ClaimRequestDeviceProvidersItemName {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::ClaudeCode => f.write_str("claude-code"),
+            Self::Codex => f.write_str("codex"),
+        }
+    }
+}
+impl ::std::str::FromStr for ClaimRequestDeviceProvidersItemName {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "claude-code" => Ok(Self::ClaudeCode),
+            "codex" => Ok(Self::Codex),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClaimRequestDeviceProvidersItemName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClaimRequestDeviceProvidersItemName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ClaimRequestDeviceProvidersItemVersion(::std::string::String);
+impl ::std::ops::Deref for ClaimRequestDeviceProvidersItemVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ClaimRequestDeviceProvidersItemVersion> for ::std::string::String {
+    fn from(value: ClaimRequestDeviceProvidersItemVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ClaimRequestDeviceProvidersItemVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ClaimRequestDeviceProvidersItemVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ClaimRequestDeviceProvidersItemVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ClaimRequestDeviceProvidersItemVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
 }
 #[derive(::serde::Deserialize, ::serde::Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum ClaimRequestProvidersItem {
@@ -886,6 +1479,8 @@ pub enum ErrorErrorCategory {
     NotFound,
     #[serde(rename = "retryable")]
     Retryable,
+    #[serde(rename = "rate_limited")]
+    RateLimited,
     #[serde(rename = "invalid_input")]
     InvalidInput,
     #[serde(rename = "lease_lost")]
@@ -906,6 +1501,7 @@ impl ::std::fmt::Display for ErrorErrorCategory {
             Self::IdempotencyConflict => f.write_str("idempotency_conflict"),
             Self::NotFound => f.write_str("not_found"),
             Self::Retryable => f.write_str("retryable"),
+            Self::RateLimited => f.write_str("rate_limited"),
             Self::InvalidInput => f.write_str("invalid_input"),
             Self::LeaseLost => f.write_str("lease_lost"),
             Self::UpgradeRequired => f.write_str("upgrade_required"),
@@ -924,6 +1520,7 @@ impl ::std::str::FromStr for ErrorErrorCategory {
             "idempotency_conflict" => Ok(Self::IdempotencyConflict),
             "not_found" => Ok(Self::NotFound),
             "retryable" => Ok(Self::Retryable),
+            "rate_limited" => Ok(Self::RateLimited),
             "invalid_input" => Ok(Self::InvalidInput),
             "lease_lost" => Ok(Self::LeaseLost),
             "upgrade_required" => Ok(Self::UpgradeRequired),

@@ -1,7 +1,7 @@
 {
   "error": "error.json",
   "protocol_header": "x-mootbox-runner-protocol",
-  "protocol_version": 8,
+  "protocol_version": 9,
   "routes": [
     {
       "method": "POST",
@@ -14,6 +14,12 @@
       "request": "exchange-pairing-request.json",
       "response": "exchange-pairing-response.json",
       "route": "/runner/pairings/:pairingId/exchange"
+    },
+    {
+      "method": "POST",
+      "request": "claim-pairing-code-request.json",
+      "response": "claim-pairing-code-response.json",
+      "route": "/runner/pairings/claim-code"
     },
     {
       "method": "POST",
