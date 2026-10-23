@@ -3,6 +3,7 @@ use std::path::Path;
 use std::time::Duration;
 
 use chrono::Utc;
+use mootbox_daemon::git::snapshot_worktree;
 use mootbox_daemon::journal::{Journal, JournalEntry};
 use serde_json::{Value, json};
 use uuid::Uuid;
@@ -11,9 +12,9 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use crate::common::fixture;
 use crate::harness::{
-    FakeProvider, TestDaemon, bound_home, claimed, completion_of, daemon_options, execute_claim, healthy_heartbeats,
-    journal_on_disk, mount_claim_once, mount_claim_while_active, mount_mootbox, requests_to, run_request_index,
-    wait_for_claims, wait_for_empty_journal, wait_until,
+    FakeProvider, TestDaemon, bound_home, claimed, completion_of, daemon_options, execute_claim, git,
+    healthy_heartbeats, journal_on_disk, mount_claim_once, mount_claim_while_active, mount_mootbox, requests_to,
+    run_request_index, wait_for_claims, wait_for_empty_journal, wait_until,
 };
 
 const BEFORE_EVERYTHING_PRIORITY: u8 = 1;
@@ -28,6 +29,7 @@ fn orphan(run_id: Uuid, worktree: &Path) -> JournalEntry {
         worktree: worktree.to_path_buf(),
         started_at: Utc::now(),
         workspace_id: None,
+        start: None,
     }
 }
 
@@ -69,6 +71,30 @@ async fn an_unfinished_run_in_the_journal_is_completed_as_runner_restarted_befor
     );
     assert_eq!(journal_on_disk(&bound.home), Vec::<Value>::new());
     assert!(provider.invocations().is_empty());
+}
+
+#[tokio::test]
+async fn a_restarted_run_with_a_start_snapshot_reports_the_files_it_changed() {
+    let server = MockServer::start().await;
+    let bound = bound_home(&server);
+    let run_id = Uuid::new_v4();
+    let start = snapshot_worktree(&bound.repository).await.expect("snapshots");
+    std::fs::write(bound.repository.join("left-behind.txt"), "partial work\n").expect("writes");
+    let entry = JournalEntry {
+        start: Some(start),
+        ..orphan(run_id, &bound.repository)
+    };
+    seed(&bound.home, entry).await;
+    mount_mootbox(&server, healthy_heartbeats()).await;
+    let provider = FakeProvider::claude("success");
+    let daemon = TestDaemon::start(daemon_options(bound.config.clone(), &bound.home, &provider));
+
+    let completion = completion_of(&server, run_id).await;
+    daemon.stop().await;
+
+    assert_eq!(completion["error"], "runner_restarted");
+    assert_eq!(completion["changes"]["files"][0]["path"], "left-behind.txt");
+    assert_eq!(completion["changes"]["files"][0]["status"], "added");
 }
 
 #[tokio::test]
@@ -118,7 +144,14 @@ async fn reconcile_required_leaves_a_run_active_in_this_daemon_alone() {
             .then_some(())
     })
     .await;
-    let during_run = journal_on_disk(&bound.home);
+    let during_run = wait_until(|| async {
+        let journal = journal_on_disk(&bound.home);
+        journal
+            .iter()
+            .all(|entry| entry.get("start").is_some())
+            .then_some(journal)
+    })
+    .await;
     provider.release();
     let completion = completion_of(&server, run_id).await;
     wait_for_empty_journal(&bound.home).await;
@@ -130,6 +163,12 @@ async fn reconcile_required_leaves_a_run_active_in_this_daemon_alone() {
     assert_eq!(during_run[0]["generation"], 1);
     let worktree = bound.home.join("worktrees").join(format!("mootbox-{run_id}"));
     assert_eq!(during_run[0]["worktree"], json!(worktree));
+    assert_eq!(during_run[0]["start"]["head"], git(&worktree, &["rev-parse", "HEAD"]));
+    assert!(
+        during_run[0]["start"]["tree"]
+            .as_str()
+            .is_some_and(|tree| tree.len() == 40)
+    );
     assert_eq!(completion["outcome"], "succeeded", "{completion}");
     let completions = requests_to(&server, &format!("/runner/runs/{run_id}/complete")).await;
     assert_eq!(completions.len(), 1);

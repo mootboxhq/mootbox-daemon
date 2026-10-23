@@ -179,6 +179,38 @@ async fn wall_time_stops_the_run_as_failed() {
 }
 
 #[tokio::test]
+async fn a_completed_run_reports_the_files_it_changed_in_its_worktree() {
+    let server = MockServer::start().await;
+    let bound = bound_home(&server);
+    let run_id = Uuid::new_v4();
+    mount_claim_once(&server, claimed(execute_claim(run_id, bound.repository_id))).await;
+    mount_mootbox(&server, healthy_heartbeats()).await;
+    let provider = FakeProvider::claude("edit");
+    let daemon = TestDaemon::start(daemon_options(bound.config.clone(), &bound.home, &provider));
+
+    let completion = completion_of(&server, run_id).await;
+    daemon.stop().await;
+
+    assert_eq!(completion["outcome"], "succeeded", "{completion}");
+    let changes = &completion["changes"];
+    assert_eq!(changes["files_truncated"], false);
+    assert_eq!(changes["commits"], json!([]));
+    let file = &changes["files"][0];
+    assert_eq!(changes["files"].as_array().map(Vec::len), Some(1), "{changes}");
+    assert_eq!(file["path"], "run-notes.txt");
+    assert_eq!(file["status"], "added");
+    assert_eq!((&file["additions"], &file["deletions"]), (&json!(1), &json!(0)));
+    assert_eq!(file["binary"], false);
+    assert_eq!(file["patch_truncated"], false);
+    assert!(
+        file["patch"]
+            .as_str()
+            .is_some_and(|patch| patch.contains("+from the run\n")),
+        "{file}"
+    );
+}
+
+#[tokio::test]
 async fn a_crashed_provider_fails_the_run_with_its_exit_code() {
     let server = MockServer::start().await;
     let bound = bound_home(&server);

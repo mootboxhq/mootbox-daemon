@@ -77,6 +77,7 @@ impl Lease {
             worktree: record.worktree.to_path_buf(),
             started_at: Utc::now(),
             workspace_id: Some(record.workspace_id),
+            start: None,
         }
     }
 }

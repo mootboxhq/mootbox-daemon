@@ -14,6 +14,7 @@ use crate::journal::Journal;
 use crate::private_files;
 use crate::providers::{ProviderKind, ProviderOptions, SelectedProvider};
 
+pub mod changes;
 mod lease;
 pub mod outcome;
 pub mod process;
@@ -102,6 +103,10 @@ pub async fn execute_claimed(context: &RunContext, run: ClaimResponseClaimedRun)
         Ok(prompt) => prompt,
         Err(error) => return report::complete_failed(context, &lease, &anyhow!(error)).await,
     };
+    let start = changes::snapshot_start(&worktree).await;
+    if let Some(start) = &start {
+        report::remember_start(context, lease.run_id, start).await;
+    }
     let mut keeper = LeaseKeeper::new(context, &lease);
     let provider_run = ProviderRun {
         provider,
@@ -128,7 +133,15 @@ pub async fn execute_claimed(context: &RunContext, run: ClaimResponseClaimedRun)
     if let Some(checkpoint) = &checkpoint {
         report::record_checkpoint(context, &lease, checkpoint).await;
     }
-    let request = report::completion_request(&lease, &supervised, checkpoint.as_ref());
+    let file_changes = match &start {
+        Some(start) => changes::capture(&worktree, start).await,
+        None => None,
+    };
+    let worktree_result = report::WorktreeResult {
+        checkpoint,
+        changes: file_changes,
+    };
+    let request = report::completion_request(&lease, &supervised, worktree_result);
     report::complete(context, &lease, request).await;
 }
 

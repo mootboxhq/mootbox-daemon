@@ -10,6 +10,7 @@ use tokio::sync::Mutex;
 use tracing::warn;
 use uuid::Uuid;
 
+use crate::git::WorktreeSnapshot;
 use crate::private_files;
 
 const JOURNAL_FILE: &str = "journal.json";
@@ -25,6 +26,8 @@ pub struct JournalEntry {
     pub started_at: DateTime<Utc>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub workspace_id: Option<Uuid>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub start: Option<WorktreeSnapshot>,
 }
 
 impl JournalEntry {
@@ -139,6 +142,7 @@ mod tests {
             worktree: PathBuf::from("/tmp/worktree"),
             started_at: Utc::now(),
             workspace_id: None,
+            start: None,
         }
     }
 

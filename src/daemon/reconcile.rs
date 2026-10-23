@@ -6,9 +6,12 @@ use tracing::{info, warn};
 use uuid::Uuid;
 
 use crate::api::ApiError;
-use crate::contracts::{ClaimResponseRunsItem, CompleteRunRequest, CompleteRunRequestOutcome};
+use crate::contracts::{
+    ClaimResponseRunsItem, CompleteRunRequest, CompleteRunRequestChanges, CompleteRunRequestOutcome,
+};
 use crate::journal::JournalEntry;
 use crate::run::RunContext;
+use crate::run::changes;
 
 const RUNNER_RESTARTED: &str = "runner_restarted";
 const RESTARTED_BEFORE_CLAIM: &str = "runner_restarted_before_claim_was_received";
@@ -34,7 +37,10 @@ pub async fn fail_unreceived_claim(context: &RunContext, run: &ClaimResponseRuns
 }
 
 async fn complete_restarted(context: &RunContext, entry: &JournalEntry) -> Result<(), ApiError> {
-    let request = failed(entry.generation, RUNNER_RESTARTED);
+    let request = CompleteRunRequest {
+        changes: restarted_changes(entry).await,
+        ..failed(entry.generation, RUNNER_RESTARTED)
+    };
     match context.client.complete(entry.run_id, &request).await {
         Ok(response) => info!(run_id = %entry.run_id, state = ?response.state, "reconciled unfinished run"),
         Err(error) if error.is_rejection() => {
@@ -43,6 +49,11 @@ async fn complete_restarted(context: &RunContext, entry: &JournalEntry) -> Resul
         Err(error) => return Err(error),
     }
     Ok(())
+}
+
+async fn restarted_changes(entry: &JournalEntry) -> Option<CompleteRunRequestChanges> {
+    let start = entry.start.as_ref()?;
+    changes::capture(&entry.worktree, start).await
 }
 
 fn failed(generation: NonZeroU64, error: &str) -> CompleteRunRequest {

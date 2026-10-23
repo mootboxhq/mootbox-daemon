@@ -49,6 +49,9 @@ fi
 printf '{"type":"system","subtype":"init","session_id":"%s"}\n' "$session_id"
 
 case "$scenario" in
+  edit)
+    printf 'from the run\n' > run-notes.txt
+    ;;
   crash)
     echo "fatal: the fake provider crashed" >&2
     exit 3

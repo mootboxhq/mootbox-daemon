@@ -7,20 +7,22 @@ use super::lease::{Lease, StopReason};
 use super::outcome::ErrorCategory;
 use super::supervise::Supervised;
 use crate::contracts::{
-    CompleteRunRequest, CompleteRunRequestError, CompleteRunRequestOutcome, RunEventRequest, RunEventRequestType,
+    CompleteRunRequest, CompleteRunRequestChanges, CompleteRunRequestError, CompleteRunRequestOutcome, RunEventRequest,
+    RunEventRequestType,
 };
-use crate::git::Checkpoint;
+use crate::git::{Checkpoint, WorktreeSnapshot};
 use crate::journal::JournalEntry;
 
 const PROCESS_FAILED: &str = "process_failed";
 const MAX_ERROR_LENGTH: usize = 2000;
 const MAX_FINAL_ANSWER_LENGTH: usize = 20_000;
 
-pub fn completion_request(
-    lease: &Lease,
-    supervised: &Supervised,
-    checkpoint: Option<&Checkpoint>,
-) -> CompleteRunRequest {
+pub struct WorktreeResult {
+    pub checkpoint: Option<Checkpoint>,
+    pub changes: Option<CompleteRunRequestChanges>,
+}
+
+pub fn completion_request(lease: &Lease, supervised: &Supervised, worktree: WorktreeResult) -> CompleteRunRequest {
     let report = &supervised.report;
     let result = report.result.as_ref();
     let exit = Map::from_iter([
@@ -31,10 +33,10 @@ pub fn completion_request(
             "error_category".to_string(),
             json!(supervised.error_category.map(ErrorCategory::as_str)),
         ),
-        ("checkpoint".to_string(), json!(checkpoint)),
+        ("checkpoint".to_string(), json!(worktree.checkpoint)),
     ]);
     CompleteRunRequest {
-        changes: None,
+        changes: worktree.changes,
         error: supervised.error().and_then(error_text),
         estimated_cost_usd: result.and_then(|result| result.cost_usd),
         exit,
@@ -121,6 +123,20 @@ pub async fn remember(context: &RunContext, entry: JournalEntry) {
     if let Err(error) = context.journal.record(entry).await {
         warn!(%run_id, error = format!("{error:#}"), "could not record the run in the journal");
     }
+}
+
+pub async fn remember_start(context: &RunContext, run_id: Uuid, start: &WorktreeSnapshot) {
+    let Some(entry) = context.journal.entry(run_id).await else {
+        return;
+    };
+    remember(
+        context,
+        JournalEntry {
+            start: Some(start.clone()),
+            ..entry
+        },
+    )
+    .await;
 }
 
 pub async fn forget_lost_lease(context: &RunContext, lease: &Lease, stop_reason: Option<StopReason>) {
