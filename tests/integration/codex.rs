@@ -53,6 +53,19 @@ async fn a_codex_run_is_claimed_executed_and_completed_with_its_final_message() 
 
     assert_eq!(completion["outcome"], "succeeded", "{completion}");
     assert_eq!(completion["final_answer"], "done in codex");
+    let events = requests_to(&server, &format!("/runner/runs/{run_id}/events")).await;
+    assert!(
+        events
+            .iter()
+            .any(|event| event["type"] == "progress" && event["payload"]["message"] == "done in codex"),
+        "{events:?}"
+    );
+    assert!(
+        !events.iter().any(|event| event["payload"]["message"]
+            .as_str()
+            .is_some_and(|message| message.contains("thinking"))),
+        "{events:?}"
+    );
     assert_eq!(completion["exit"]["code"], 0);
     assert_eq!(completion["exit"]["error_category"], Value::Null);
     assert_eq!(completion["exit"]["checkpoint"]["branch"], format!("mootbox/{run_id}"));
@@ -71,6 +84,11 @@ async fn a_codex_run_is_claimed_executed_and_completed_with_its_final_message() 
     assert!(invocation.arguments.contains(&format!(
         "mcp_servers.mootbox.bearer_token_env_var=\"{RUN_TOKEN_VARIABLE}\""
     )));
+    assert!(
+        invocation
+            .arguments
+            .contains(&"mcp_servers.mootbox.default_tools_approval_mode=\"approve\"".to_string())
+    );
     let token = claim["run"]["run_token"].as_str().expect("run token");
     assert_eq!(invocation.run_token, token);
     assert!(!invocation.arguments.iter().any(|argument| argument.contains(token)));
@@ -129,4 +147,17 @@ async fn a_failed_codex_turn_fails_the_run_with_the_turn_message() {
     assert_eq!(completion["outcome"], "failed", "{completion}");
     assert_eq!(completion["error"], "rate_limited");
     assert_eq!(completion["final_answer"], "usage limit reached");
+}
+
+#[tokio::test]
+async fn a_codex_run_whose_mootbox_tool_call_is_blocked_for_approval_fails_as_permission_required() {
+    let server = MockServer::start().await;
+    let bound = codex_bound(&server);
+    let claim = codex_claim(Uuid::new_v4(), &bound);
+    let provider = FakeProvider::codex("mcp_blocked");
+
+    let completion = run_one(&server, &bound, &claim, &provider).await;
+
+    assert_eq!(completion["outcome"], "failed", "{completion}");
+    assert_eq!(completion["error"], "permission_required");
 }

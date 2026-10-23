@@ -4,6 +4,7 @@ pub const RUN_TOKEN_VARIABLE: &str = "MOOTBOX_RUN_TOKEN";
 
 const WRITABLE_SANDBOX: &str = "sandbox_mode=\"workspace-write\"";
 const NEVER_ASK_FOR_APPROVAL: &str = "approval_policy=\"never\"";
+const PRE_APPROVED_TOOLS: &str = "default_tools_approval_mode=\"approve\"";
 
 pub fn plan(request: &LaunchRequest<'_>) -> LaunchPlan {
     LaunchPlan {
@@ -31,6 +32,8 @@ fn arguments(request: &LaunchRequest<'_>) -> Vec<String> {
         ),
         String::from("-c"),
         format!("mcp_servers.{MOOTBOX_MCP_SERVER_NAME}.bearer_token_env_var=\"{RUN_TOKEN_VARIABLE}\""),
+        String::from("-c"),
+        format!("mcp_servers.{MOOTBOX_MCP_SERVER_NAME}.{PRE_APPROVED_TOOLS}"),
     ]);
     if let Some(model) = &request.options.model {
         arguments.extend([String::from("--model"), model.clone()]);
@@ -79,6 +82,22 @@ mod tests {
     }
 
     #[test]
+    fn only_the_mootbox_mcp_server_tools_are_pre_approved() {
+        let arguments = plan_for(&ProviderOptions::default(), None).arguments;
+        let approvals: Vec<&String> = arguments
+            .iter()
+            .filter(|argument| argument.contains("approval_mode"))
+            .collect();
+
+        assert_eq!(
+            approvals,
+            ["mcp_servers.mootbox.default_tools_approval_mode=\"approve\""]
+        );
+        assert!(!arguments.iter().any(|argument| argument.starts_with("--dangerously")));
+        assert!(!arguments.contains(&"--approve-for-me".to_string()));
+    }
+
+    #[test]
     fn the_run_token_travels_only_in_the_environment_and_never_on_disk() {
         let plan = plan_for(&ProviderOptions::default(), None);
 
@@ -94,6 +113,7 @@ mod tests {
         assert_eq!(arguments[..3], ["exec", "resume", "thread-1"]);
         assert!(arguments.contains(&"--json".to_string()));
         assert!(arguments.contains(&WRITABLE_SANDBOX.to_string()));
+        assert!(arguments.contains(&format!("mcp_servers.mootbox.{PRE_APPROVED_TOOLS}")));
     }
 
     #[test]
