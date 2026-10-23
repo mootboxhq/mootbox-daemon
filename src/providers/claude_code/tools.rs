@@ -1,10 +1,12 @@
 use crate::providers::MOOTBOX_MCP_SERVER_NAME;
 
-const MOOTBOX_TOOLS: [&str; 5] = [
+const MOOTBOX_TOOLS: [&str; 7] = [
     "mootbox_whoami",
     "mootbox_get_context",
     "mootbox_read_chat",
     "mootbox_post_chat_message",
+    "mootbox_ask_question",
+    "mootbox_request_approval",
     "mootbox_submit_result",
 ];
 const LOCAL_TOOLS: [&str; 7] = [
@@ -36,8 +38,10 @@ mod tests {
 
         assert_eq!(
             tools.iter().filter(|tool| tool.starts_with("mcp__mootbox__")).count(),
-            5
+            7
         );
+        assert!(tools.contains(&"mcp__mootbox__mootbox_ask_question".to_string()));
+        assert!(tools.contains(&"mcp__mootbox__mootbox_request_approval".to_string()));
         assert!(!tools.iter().any(|tool| tool.contains("mootbox_create_handoff")));
         assert_eq!(tools.last().map(String::as_str), Some("Bash(pnpm test:*)"));
     }
