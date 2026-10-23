@@ -33,6 +33,28 @@ fn shared_chat_prompt_has_history_and_no_task_or_delegation_flow() {
 }
 
 #[test]
+fn prompt_asks_for_concise_markdown_replies_that_lead_with_the_outcome_and_end_with_open_questions() {
+    let manifest = fixture_manifest(include_str!(
+        "../contracts/runner/fixtures/claim-response.claimed-execute.json"
+    ))
+    .expect("claimed fixture");
+    let text = prompt::execute_prompt(&manifest).expect("prompt renders");
+    let tool_guidance = text.find("call mootbox_update_summary").expect("tool guidance");
+    let reply_style = text
+        .find("Write chat messages and your submitted result as concise GitHub-flavoured markdown:")
+        .expect("reply style section");
+    assert!(tool_guidance < reply_style);
+    assert!(text.contains("- Lead with the outcome in one or two lines; no filler, no restating the question."));
+    assert!(text.contains(
+        "- Use short ## headings and short bullets; fenced code blocks with a language; inline code for paths and commands."
+    ));
+    assert!(text.contains("- Use tables only for genuinely tabular data; no HTML, no images."));
+    assert!(text.contains("- Say what you verified (commands run and their result) and what you did not."));
+    assert!(text.ends_with("- Put open questions or decisions last, as bullets.\n"));
+    assert_eq!(text.matches("mootbox_submit_result once").count(), 1);
+}
+
+#[test]
 fn prompt_without_chat_context_omits_the_section() {
     let manifest = fixture_manifest(include_str!(
         "../contracts/runner/fixtures/claim-response.claimed-execute.json"
