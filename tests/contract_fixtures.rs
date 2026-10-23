@@ -80,6 +80,7 @@ round_trip_tests! {
     claim_response_idle: "claim-response.idle.json" => ClaimResponse,
     claim_response_reconcile_required: "claim-response.reconcile-required.json" => ClaimResponse,
     complete_run_request: "complete-run-request.json" => CompleteRunRequest,
+    complete_run_request_with_changes: "complete-run-request.with-changes.json" => CompleteRunRequest,
     complete_run_response: "complete-run-response.json" => CompleteRunResponse,
     error_lease_lost: "error.lease-lost.json" => Error,
     error_repository_not_found: "error.repository-not-found.json" => Error,

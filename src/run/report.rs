@@ -34,6 +34,7 @@ pub fn completion_request(
         ("checkpoint".to_string(), json!(checkpoint)),
     ]);
     CompleteRunRequest {
+        changes: None,
         error: supervised.error().and_then(error_text),
         estimated_cost_usd: result.and_then(|result| result.cost_usd),
         exit,
@@ -68,6 +69,7 @@ pub async fn complete_failed(context: &RunContext, lease: &Lease, failure: &anyh
 
 fn failed_request(lease: &Lease, error: &str, exit: Map<String, Value>) -> CompleteRunRequest {
     CompleteRunRequest {
+        changes: None,
         error: error_text(error),
         estimated_cost_usd: None,
         exit,

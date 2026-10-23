@@ -279,6 +279,8 @@ pub struct ClaimResponseRunsItem {
 #[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
 pub struct CompleteRunRequest {
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub changes: ::std::option::Option<CompleteRunRequestChanges>,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub effective_model: ::std::option::Option<CompleteRunRequestEffectiveModel>,
     #[serde(skip_serializing_if = "::std::option::Option::is_none")]
     pub error: ::std::option::Option<CompleteRunRequestError>,
@@ -290,6 +292,310 @@ pub struct CompleteRunRequest {
     pub final_answer: ::std::option::Option<CompleteRunRequestFinalAnswer>,
     pub generation: ::std::num::NonZeroU64,
     pub outcome: CompleteRunRequestOutcome,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct CompleteRunRequestChanges {
+    pub commits: ::std::vec::Vec<CompleteRunRequestChangesCommitsItem>,
+    pub files: ::std::vec::Vec<CompleteRunRequestChangesFilesItem>,
+    pub files_truncated: bool,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct CompleteRunRequestChangesCommitsItem {
+    pub sha: CompleteRunRequestChangesCommitsItemSha,
+    pub subject: CompleteRunRequestChangesCommitsItemSubject,
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CompleteRunRequestChangesCommitsItemSha(::std::string::String);
+impl ::std::ops::Deref for CompleteRunRequestChangesCommitsItemSha {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CompleteRunRequestChangesCommitsItemSha> for ::std::string::String {
+    fn from(value: CompleteRunRequestChangesCommitsItemSha) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CompleteRunRequestChangesCommitsItemSha {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        static PATTERN: ::std::sync::LazyLock<::regress::Regex> =
+            ::std::sync::LazyLock::new(|| ::regress::Regex::new("^[0-9a-f]{40}([0-9a-f]{24})?$").unwrap());
+        if PATTERN.find(value).is_none() {
+            return Err("doesn't match pattern \"^[0-9a-f]{40}([0-9a-f]{24})?$\"".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CompleteRunRequestChangesCommitsItemSha {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CompleteRunRequestChangesCommitsItemSha {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CompleteRunRequestChangesCommitsItemSha {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CompleteRunRequestChangesCommitsItemSubject(::std::string::String);
+impl ::std::ops::Deref for CompleteRunRequestChangesCommitsItemSubject {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CompleteRunRequestChangesCommitsItemSubject> for ::std::string::String {
+    fn from(value: CompleteRunRequestChangesCommitsItemSubject) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CompleteRunRequestChangesCommitsItemSubject {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 200usize {
+            return Err("longer than 200 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CompleteRunRequestChangesCommitsItemSubject {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CompleteRunRequestChangesCommitsItemSubject {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CompleteRunRequestChangesCommitsItemSubject {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct CompleteRunRequestChangesFilesItem {
+    #[serde(deserialize_with = "::std::option::Option::deserialize")]
+    pub additions: ::std::option::Option<i64>,
+    pub binary: bool,
+    #[serde(deserialize_with = "::std::option::Option::deserialize")]
+    pub deletions: ::std::option::Option<i64>,
+    #[serde(deserialize_with = "::std::option::Option::deserialize")]
+    pub patch: ::std::option::Option<CompleteRunRequestChangesFilesItemPatch>,
+    pub patch_truncated: bool,
+    pub path: CompleteRunRequestChangesFilesItemPath,
+    #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+    pub previous_path: ::std::option::Option<CompleteRunRequestChangesFilesItemPreviousPath>,
+    pub status: CompleteRunRequestChangesFilesItemStatus,
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CompleteRunRequestChangesFilesItemPatch(::std::string::String);
+impl ::std::ops::Deref for CompleteRunRequestChangesFilesItemPatch {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CompleteRunRequestChangesFilesItemPatch> for ::std::string::String {
+    fn from(value: CompleteRunRequestChangesFilesItemPatch) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CompleteRunRequestChangesFilesItemPatch {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 65536usize {
+            return Err("longer than 65536 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CompleteRunRequestChangesFilesItemPatch {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CompleteRunRequestChangesFilesItemPatch {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CompleteRunRequestChangesFilesItemPatch {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CompleteRunRequestChangesFilesItemPath(::std::string::String);
+impl ::std::ops::Deref for CompleteRunRequestChangesFilesItemPath {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CompleteRunRequestChangesFilesItemPath> for ::std::string::String {
+    fn from(value: CompleteRunRequestChangesFilesItemPath) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CompleteRunRequestChangesFilesItemPath {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 1024usize {
+            return Err("longer than 1024 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CompleteRunRequestChangesFilesItemPath {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CompleteRunRequestChangesFilesItemPath {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CompleteRunRequestChangesFilesItemPath {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct CompleteRunRequestChangesFilesItemPreviousPath(::std::string::String);
+impl ::std::ops::Deref for CompleteRunRequestChangesFilesItemPreviousPath {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<CompleteRunRequestChangesFilesItemPreviousPath> for ::std::string::String {
+    fn from(value: CompleteRunRequestChangesFilesItemPreviousPath) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for CompleteRunRequestChangesFilesItemPreviousPath {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 1024usize {
+            return Err("longer than 1024 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for CompleteRunRequestChangesFilesItemPreviousPath {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CompleteRunRequestChangesFilesItemPreviousPath {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for CompleteRunRequestChangesFilesItemPreviousPath {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum CompleteRunRequestChangesFilesItemStatus {
+    #[serde(rename = "added")]
+    Added,
+    #[serde(rename = "modified")]
+    Modified,
+    #[serde(rename = "deleted")]
+    Deleted,
+    #[serde(rename = "renamed")]
+    Renamed,
+}
+impl ::std::fmt::Display for CompleteRunRequestChangesFilesItemStatus {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::Added => f.write_str("added"),
+            Self::Modified => f.write_str("modified"),
+            Self::Deleted => f.write_str("deleted"),
+            Self::Renamed => f.write_str("renamed"),
+        }
+    }
+}
+impl ::std::str::FromStr for CompleteRunRequestChangesFilesItemStatus {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "added" => Ok(Self::Added),
+            "modified" => Ok(Self::Modified),
+            "deleted" => Ok(Self::Deleted),
+            "renamed" => Ok(Self::Renamed),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for CompleteRunRequestChangesFilesItemStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for CompleteRunRequestChangesFilesItemStatus {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
 }
 #[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[serde(transparent)]

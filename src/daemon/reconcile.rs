@@ -47,6 +47,7 @@ async fn complete_restarted(context: &RunContext, entry: &JournalEntry) -> Resul
 
 fn failed(generation: NonZeroU64, error: &str) -> CompleteRunRequest {
     CompleteRunRequest {
+        changes: None,
         error: error.try_into().ok(),
         estimated_cost_usd: None,
         exit: Map::new(),

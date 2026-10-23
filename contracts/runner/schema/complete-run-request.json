@@ -1,6 +1,125 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {
+    "changes": {
+      "properties": {
+        "commits": {
+          "items": {
+            "properties": {
+              "sha": {
+                "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$",
+                "type": "string"
+              },
+              "subject": {
+                "maxLength": 200,
+                "type": "string"
+              }
+            },
+            "required": [
+              "sha",
+              "subject"
+            ],
+            "type": "object"
+          },
+          "maxItems": 50,
+          "type": "array"
+        },
+        "files": {
+          "items": {
+            "properties": {
+              "additions": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "binary": {
+                "type": "boolean"
+              },
+              "deletions": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "patch": {
+                "anyOf": [
+                  {
+                    "maxLength": 65536,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "patch_truncated": {
+                "type": "boolean"
+              },
+              "path": {
+                "maxLength": 1024,
+                "minLength": 1,
+                "type": "string"
+              },
+              "previous_path": {
+                "anyOf": [
+                  {
+                    "maxLength": 1024,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "status": {
+                "enum": [
+                  "added",
+                  "modified",
+                  "deleted",
+                  "renamed"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "status",
+              "additions",
+              "deletions",
+              "binary",
+              "patch",
+              "patch_truncated"
+            ],
+            "type": "object"
+          },
+          "maxItems": 300,
+          "type": "array"
+        },
+        "files_truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "files",
+        "files_truncated",
+        "commits"
+      ],
+      "type": "object"
+    },
     "effective_model": {
       "maxLength": 200,
       "type": "string"
