@@ -77,6 +77,7 @@ const MINIMAL_CLAIM_REQUEST: &str = "claim-request.minimal.json";
 round_trip_tests! {
     claim_request: "claim-request.json" => ClaimRequest,
     claim_response_claimed_execute: "claim-response.claimed-execute.json" => ClaimResponse,
+    claim_response_claimed_execute_with_context: "claim-response.claimed-execute.with-context.json" => ClaimResponse,
     claim_response_idle: "claim-response.idle.json" => ClaimResponse,
     claim_response_reconcile_required: "claim-response.reconcile-required.json" => ClaimResponse,
     complete_run_request: "complete-run-request.json" => CompleteRunRequest,

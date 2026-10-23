@@ -107,6 +107,53 @@
                   ],
                   "type": "object"
                 },
+                "context": {
+                  "properties": {
+                    "description": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "instructions": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "linked_chats": {
+                      "items": {
+                        "properties": {
+                          "project": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "title",
+                          "project"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "pinned_files": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "description",
+                    "instructions",
+                    "pinned_files",
+                    "linked_chats"
+                  ],
+                  "type": "object"
+                },
                 "context_messages": {
                   "items": {
                     "properties": {
@@ -235,6 +282,7 @@
                 "provider",
                 "instruction",
                 "context_messages",
+                "context",
                 "target",
                 "session_key",
                 "resume",

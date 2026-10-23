@@ -19,7 +19,7 @@ use crate::contracts::{
 };
 
 pub const RUNNER_PROTOCOL_HEADER: &str = "x-mootbox-runner-protocol";
-pub const RUNNER_PROTOCOL_VERSION: u32 = 7;
+pub const RUNNER_PROTOCOL_VERSION: u32 = 8;
 
 const REQUEST_ID_HEADER: &str = "x-request-id";
 const TRACEPARENT_HEADER: &str = "traceparent";

@@ -78,6 +78,7 @@ pub struct ClaimResponseClaimedRun {
 #[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
 pub struct ClaimResponseClaimedRunManifest {
     pub chat: ClaimResponseClaimedRunManifestChat,
+    pub context: ClaimResponseClaimedRunManifestContext,
     pub context_messages: ::std::vec::Vec<ClaimResponseClaimedRunManifestContextMessagesItem>,
     pub instruction: ClaimResponseClaimedRunManifestInstruction,
     pub permitted_tools: ::std::vec::Vec<::std::string::String>,
@@ -91,6 +92,20 @@ pub struct ClaimResponseClaimedRunManifest {
 pub struct ClaimResponseClaimedRunManifestChat {
     pub id: ::uuid::Uuid,
     pub project_name: ::std::string::String,
+    pub title: ::std::string::String,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct ClaimResponseClaimedRunManifestContext {
+    #[serde(deserialize_with = "::std::option::Option::deserialize")]
+    pub description: ::std::option::Option<::std::string::String>,
+    #[serde(deserialize_with = "::std::option::Option::deserialize")]
+    pub instructions: ::std::option::Option<::std::string::String>,
+    pub linked_chats: ::std::vec::Vec<ClaimResponseClaimedRunManifestContextLinkedChatsItem>,
+    pub pinned_files: ::std::vec::Vec<::std::string::String>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct ClaimResponseClaimedRunManifestContextLinkedChatsItem {
+    pub project: ::std::string::String,
     pub title: ::std::string::String,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]

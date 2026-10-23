@@ -41,6 +41,12 @@
           "reply_to_message_id": null
         }
       ],
+      "context": {
+        "description": null,
+        "instructions": null,
+        "pinned_files": [],
+        "linked_chats": []
+      },
       "target": {
         "repository_id": "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2014",
         "remote_url": "git@github.com:acme/backend.git",

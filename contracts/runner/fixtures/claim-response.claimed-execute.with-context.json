@@ -1,0 +1,76 @@
+{
+  "status": "claimed",
+  "run": {
+    "run_id": "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2016",
+    "chat_id": "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2015",
+    "generation": 1,
+    "branch": "mootbox/5d1f5c1e-5d1f5c1e",
+    "lease_expires_at": "2026-10-17T12:02:00.000Z",
+    "run_token": "mootbox_run_6f1c2d9a4b7e",
+    "provider": "claude-code",
+    "connection_id": "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2017",
+    "repository_id": "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2014",
+    "manifest": {
+      "run": {
+        "id": "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2016",
+        "generation": 1,
+        "branch": "mootbox/5d1f5c1e-5d1f5c1e"
+      },
+      "chat": {
+        "id": "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2015",
+        "title": "Add user search",
+        "project_name": "Backend"
+      },
+      "provider": "claude-code",
+      "instruction": "@Claude inspect the users endpoint and ask Sarah which fields the search box needs",
+      "context_messages": [
+        {
+          "id": "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2018",
+          "author": "sarah@example.com",
+          "author_kind": "human",
+          "body": "Frontend needs name and email at minimum.",
+          "created_at": "2026-10-17T11:58:00.000Z",
+          "reply_to_message_id": null
+        },
+        {
+          "id": "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2019",
+          "author": "omar@example.com",
+          "author_kind": "human",
+          "body": "@Claude inspect the users endpoint and ask Sarah which fields the search box needs",
+          "created_at": "2026-10-17T11:59:00.000Z",
+          "reply_to_message_id": null
+        }
+      ],
+      "context": {
+        "description": "Let people find users by name or email from the admin search box.",
+        "instructions": "Keep the users endpoint backwards compatible. Run pnpm check before saying a change is done.",
+        "pinned_files": [
+          "apps/api/src/routes/users.ts",
+          "docs/search.md"
+        ],
+        "linked_chats": [
+          {
+            "title": "Admin search box",
+            "project": "Frontend"
+          }
+        ]
+      },
+      "target": {
+        "repository_id": "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2014",
+        "remote_url": "git@github.com:acme/backend.git",
+        "base_ref": "main"
+      },
+      "permitted_tools": [
+        "mootbox_whoami",
+        "mootbox_get_context",
+        "mootbox_read_chat",
+        "mootbox_post_chat_message",
+        "mootbox_update_summary",
+        "mootbox_submit_result"
+      ],
+      "session_key": "a0000000-0000-4000-8000-000000000001",
+      "resume": false
+    },
+    "manifest_hash": "7c1e0f4a9b2d3e5f60718293a4b5c6d7e8f9011223344556677889900aabbccd"
+  }
+}
