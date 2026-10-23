@@ -10,6 +10,7 @@ use nix::sys::signal::{Signal, killpg};
 use nix::unistd::Pid;
 use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWriteExt, BufReader};
 use tokio::process::{Child, Command};
+use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 use tokio::time::Instant;
 
@@ -48,6 +49,7 @@ impl ProviderReport {
 }
 
 pub struct RunningProvider {
+    pub activity: Option<mpsc::Receiver<String>>,
     child: Child,
     group: Pid,
     result: JoinHandle<Option<ProviderResult>>,
@@ -78,10 +80,12 @@ impl RunningProvider {
         });
         let stdout = child.stdout.take().ok_or_else(|| unpiped("stdout"))?;
         let stderr = child.stderr.take().ok_or_else(|| unpiped("stderr"))?;
+        let (activity_tx, activity_rx) = mpsc::channel(256);
         Ok(Self {
+            activity: Some(activity_rx),
             child,
             group: Pid::from_raw(pid),
-            result: tokio::spawn(read_result(stdout, launch.provider)),
+            result: tokio::spawn(read_result(stdout, launch.provider, activity_tx)),
             stderr_tail: tokio::spawn(read_tail(stderr)),
         })
     }
@@ -141,12 +145,19 @@ fn unpiped(stream: &str) -> io::Error {
     io::Error::other(format!("the provider {stream} is not piped"))
 }
 
-async fn read_result(stdout: impl AsyncRead + Unpin, provider: ProviderKind) -> Option<ProviderResult> {
+async fn read_result(
+    stdout: impl AsyncRead + Unpin,
+    provider: ProviderKind,
+    activity: mpsc::Sender<String>,
+) -> Option<ProviderResult> {
     let mut lines = BufReader::new(stdout).split(b'\n');
     let mut result = ProviderResult::default();
     let mut seen = false;
     while let Ok(Some(line)) = lines.next_segment().await {
         seen |= provider.fold_output(&mut result, &line);
+        for message in super::progress::messages(provider, &line) {
+            let _ = activity.try_send(message);
+        }
     }
     seen.then_some(result)
 }

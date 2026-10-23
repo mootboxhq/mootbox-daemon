@@ -80,12 +80,31 @@ pub async fn supervise(keeper: &mut LeaseKeeper<'_>, run: ProviderRun<'_>) -> Re
     let session = run.resume_session_id.unwrap_or(FRESH_SESSION);
     info!(%run_id, pid = provider.pid(), %directory, session, "started provider");
     keeper.announce_executing();
-    let stop_reason = watch(keeper, &mut provider).await;
-    if let Some(reason) = stop_reason {
-        info!(%run_id, reason = reason.as_str(), "stopping run");
-        keep_lease_while(provider.terminate(context.timing.cancel_grace), keeper).await;
-    }
-    let report = provider.finish().await?;
+    let activity = provider
+        .activity
+        .take()
+        .ok_or_else(|| anyhow::anyhow!("activity stream unavailable"))?;
+    let (report, stop_reason) = {
+        let reporter = super::progress::upload(context, keeper.lease, activity);
+        tokio::pin!(reporter);
+        let work = async {
+            let stop_reason = watch(keeper, &mut provider).await;
+            if let Some(reason) = stop_reason {
+                info!(%run_id, reason = reason.as_str(), "stopping run");
+                keep_lease_while(provider.terminate(context.timing.cancel_grace), keeper).await;
+            }
+            let report = provider.finish().await?;
+            Ok::<_, std::io::Error>((report, stop_reason))
+        };
+        tokio::pin!(work);
+        tokio::select! {
+            result = &mut work => {
+                let _ = tokio::time::timeout(std::time::Duration::from_secs(2), &mut reporter).await;
+                result?
+            }
+            () = &mut reporter => work.await?,
+        }
+    };
     drop(owned_directory);
     log_failed_provider(keeper.lease, &report);
     let attempt = Attempt {

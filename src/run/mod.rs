@@ -18,6 +18,7 @@ pub mod changes;
 mod lease;
 pub mod outcome;
 pub mod process;
+mod progress;
 pub mod prompt;
 mod report;
 mod session;
