@@ -10,8 +10,8 @@ use uuid::Uuid;
 
 use super::{DaemonTiming, locked, reconcile};
 use crate::api::ApiError;
-use crate::contracts::{ClaimRequest, ClaimRequestProvidersItem, ClaimResponse};
-use crate::providers::{self, probe};
+use crate::contracts::{ClaimRequest, ClaimRequestDevice, ClaimRequestProvidersItem, ClaimResponse};
+use crate::device::{self, DeviceReporter, SignIn};
 use crate::run::{self, RunContext};
 
 const SLOT_CAPACITY: i64 = 1;
@@ -23,6 +23,7 @@ pub struct Slots {
     active_run_ids: Mutex<BTreeSet<Uuid>>,
     protocol_wait: tokio::sync::Mutex<()>,
     protocol_acceptances: AtomicU64,
+    device_reporter: Mutex<DeviceReporter>,
 }
 
 impl Slots {
@@ -34,6 +35,7 @@ impl Slots {
             active_run_ids: Mutex::new(BTreeSet::new()),
             protocol_wait: tokio::sync::Mutex::new(()),
             protocol_acceptances: AtomicU64::new(0),
+            device_reporter: Mutex::new(DeviceReporter::default()),
         }
     }
 
@@ -46,29 +48,38 @@ impl Slots {
     }
 
     pub async fn claim_request(&self) -> ClaimRequest {
+        let context = self.context();
+        let sign_ins = device::check_sign_ins(|kind| context.selected_provider.program_for(kind)).await;
         ClaimRequest {
             active_run_ids: self.active_runs().into_iter().collect(),
-            providers: self.signed_in_providers().await,
+            providers: signed_in_providers(&sign_ins),
             capacity: SLOT_CAPACITY,
             wait_ms: i64::try_from(self.timing.claim_wait.as_millis()).unwrap_or(i64::MAX),
+            device: self.due_device_report(&sign_ins).await,
         }
     }
 
-    async fn signed_in_providers(&self) -> Vec<ClaimRequestProvidersItem> {
-        let context = self.context();
-        let probes = providers::ALL.map(|kind| {
-            let program = context.selected_provider.program_for(kind);
-            tokio::spawn(async move { (kind, probe::is_signed_in(kind, &program).await) })
-        });
-        let mut signed_in = Vec::new();
-        for probe in probes {
-            if let Ok((kind, Some(true))) = probe.await
-                && let Ok(contract) = kind.contract()
-            {
-                signed_in.push(contract);
+    async fn due_device_report(&self, sign_ins: &[SignIn]) -> Option<ClaimRequestDevice> {
+        let now = tokio::time::Instant::now();
+        let cached = locked(&self.device_reporter).fresh_inventory(now);
+        let inventory = if let Some(inventory) = cached {
+            inventory
+        } else {
+            let context = self.context();
+            device::take_inventory(|kind| context.selected_provider.program_for(kind)).await
+        };
+        let report = locked(&self.device_reporter).due(now, inventory, sign_ins)?;
+        match report.contract() {
+            Ok(contract) => Some(contract),
+            Err(error) => {
+                warn!(error = %error, "this device's report does not fit the runner protocol; not sending it");
+                None
             }
         }
-        signed_in
+    }
+
+    pub fn resend_device_report(&self) {
+        locked(&self.device_reporter).forget();
     }
 
     fn active_runs(&self) -> BTreeSet<Uuid> {
@@ -152,4 +163,12 @@ impl Slots {
             () = self.stop_claiming.cancelled() => {}
         }
     }
+}
+
+fn signed_in_providers(sign_ins: &[SignIn]) -> Vec<ClaimRequestProvidersItem> {
+    sign_ins
+        .iter()
+        .filter(|sign_in| sign_in.signed_in == Some(true))
+        .filter_map(|sign_in| sign_in.kind.contract().ok())
+        .collect()
 }

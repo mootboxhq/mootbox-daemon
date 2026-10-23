@@ -68,12 +68,27 @@ pub async fn is_signed_in(provider: ProviderKind, program: &Path) -> Option<bool
     provider.read_sign_in(&output)
 }
 
-async fn installed_version(program: &Path) -> Option<Version> {
-    let output = run_probe(program, &[VERSION_FLAG]).await?;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Installation {
+    Missing,
+    Installed(Option<Version>),
+}
+
+pub async fn installation(program: &Path) -> Installation {
+    let Some(output) = run_probe(program, &[VERSION_FLAG]).await else {
+        return Installation::Missing;
+    };
     if !output.status.success() {
-        return None;
+        return Installation::Installed(None);
     }
-    Version::parse(&String::from_utf8_lossy(&output.stdout))
+    Installation::Installed(Version::parse(&String::from_utf8_lossy(&output.stdout)))
+}
+
+async fn installed_version(program: &Path) -> Option<Version> {
+    match installation(program).await {
+        Installation::Installed(version) => version,
+        Installation::Missing => None,
+    }
 }
 
 async fn run_probe(program: &Path, arguments: &[&str]) -> Option<Output> {
@@ -119,6 +134,30 @@ mod tests {
 
             assert!(matches!(error, VersionError::Unreadable { .. }), "{error}");
             assert_eq!(is_signed_in(kind, missing).await, None);
+            assert_eq!(installation(missing).await, Installation::Missing);
         }
+    }
+
+    #[tokio::test]
+    async fn an_installed_program_reports_the_version_it_prints() {
+        let directory = tempfile::tempdir().expect("temp dir");
+        let program = directory.path().join("provider");
+        std::fs::write(&program, "#!/bin/sh\necho 'codex-cli 0.120.0'\n").expect("script");
+        std::fs::set_permissions(&program, std::os::unix::fs::PermissionsExt::from_mode(0o755)).expect("mode");
+
+        assert_eq!(
+            installation(&program).await,
+            Installation::Installed(Some(Version(0, 120, 0)))
+        );
+    }
+
+    #[tokio::test]
+    async fn an_installed_program_without_a_readable_version_is_still_installed() {
+        let directory = tempfile::tempdir().expect("temp dir");
+        let program = directory.path().join("provider");
+        std::fs::write(&program, "#!/bin/sh\nexit 3\n").expect("script");
+        std::fs::set_permissions(&program, std::os::unix::fs::PermissionsExt::from_mode(0o755)).expect("mode");
+
+        assert_eq!(installation(&program).await, Installation::Installed(None));
     }
 }

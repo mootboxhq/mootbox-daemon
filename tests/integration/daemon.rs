@@ -362,3 +362,26 @@ async fn upgrade_required_pauses_claiming_until_the_health_check_is_accepted() {
         .count();
     assert_eq!(claims_before_acceptance, 2, "{paths:?}");
 }
+
+#[tokio::test]
+async fn the_first_claim_reports_the_device_and_later_claims_do_not_repeat_it() {
+    let server = MockServer::start().await;
+    let bound = bound_home(&server);
+    mount_mootbox(&server, healthy_heartbeats()).await;
+    let provider = FakeProvider::claude("success");
+    let daemon = TestDaemon::start(daemon_options(bound.config.clone(), &bound.home, &provider));
+    wait_for_claims(&server, 3).await;
+    daemon.stop().await;
+
+    let claims = requests_to(&server, "/runner/claim").await;
+    let device = &claims[0]["device"];
+    assert_eq!(device["daemon_version"], env!("CARGO_PKG_VERSION"));
+    assert_eq!(
+        device["providers"][0],
+        json!({ "name": "claude-code", "installed": true, "version": "2.1.296", "signed_in": true })
+    );
+    assert!(
+        claims[1..].iter().all(|claim| claim.get("device").is_none()),
+        "{claims:?}"
+    );
+}

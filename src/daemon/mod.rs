@@ -251,11 +251,13 @@ async fn run_slot(daemon: Arc<Daemon>, slots: Arc<Slots>) {
             Err(refusal @ ApiError::UpgradeRequired { .. }) => {
                 failures = 0;
                 drop(permit);
+                slots.resend_device_report();
                 slots.wait_until_protocol_accepted(&refusal).await;
             }
             Err(failure) => {
                 failures += 1;
                 drop(permit);
+                slots.resend_device_report();
                 let wait = backoff_with_jitter(failures, &slots.timing);
                 warn!(error = %failure, retry_in_ms = wait.as_millis(), "claim failed");
                 slots.pause(wait).await;

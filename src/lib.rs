@@ -4,6 +4,7 @@ pub mod commands;
 pub mod config;
 pub mod contracts;
 pub mod daemon;
+pub mod device;
 pub mod diagnostics;
 pub mod git;
 pub mod journal;
