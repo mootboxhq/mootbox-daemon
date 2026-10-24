@@ -15,4 +15,5 @@ mod harness;
 mod recovery;
 mod service;
 mod service_files;
+mod update;
 mod workspaces;

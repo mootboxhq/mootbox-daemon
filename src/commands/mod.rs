@@ -8,6 +8,7 @@ pub mod pair;
 pub mod service;
 pub mod start;
 pub mod status;
+pub mod update;
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Output {

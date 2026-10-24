@@ -11,6 +11,8 @@ use crate::providers::{ProviderKind, SelectedProvider};
 
 pub const HOME_OVERRIDE_VARIABLE: &str = "MOOTBOX_DAEMON_HOME";
 pub const PROVIDER_COMMAND_VARIABLE: &str = "MOOTBOX_DAEMON_PROVIDER_COMMAND";
+pub const RELEASES_URL_VARIABLE: &str = "MOOTBOX_RELEASES_URL";
+pub const DEFAULT_RELEASES_URL: &str = "https://github.com/mootboxhq/mootbox-daemon";
 pub const DEFAULT_SLOTS: u32 = 2;
 pub const DEFAULT_WALL_TIME_MINUTES: u32 = 30;
 pub const DEFAULT_SHUTDOWN_GRACE_SECONDS: u64 = 30;

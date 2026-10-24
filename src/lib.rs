@@ -14,5 +14,6 @@ pub mod logging;
 pub mod pairing;
 pub mod private_files;
 pub mod providers;
+pub mod release;
 pub mod run;
 pub mod service;

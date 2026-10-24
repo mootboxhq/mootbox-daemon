@@ -12,7 +12,7 @@ use crate::providers::{self, ProviderKind};
 
 pub const DEVICE_REPORT_INTERVAL: Duration = Duration::from_mins(5);
 
-const DAEMON_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const DAEMON_VERSION: &str = env!("CARGO_PKG_VERSION");
 const OS_RELEASE_PATH: &str = "/etc/os-release";
 const OS_RELEASE_VERSION_KEY: &str = "VERSION_ID=";
 const MACOS_VERSION_PROGRAM: &str = "sw_vers";

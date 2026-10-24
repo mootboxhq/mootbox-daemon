@@ -99,6 +99,11 @@ enum DaemonCommand {
     Doctor,
     #[command(about = "Claim and run Mootbox work for every connected repo until stopped")]
     Start(StartArgs),
+    #[command(about = "Replace this mootbox with the latest release and restart the background service")]
+    Update {
+        #[arg(long, help = "Only report whether a newer release exists")]
+        check: bool,
+    },
 }
 
 #[derive(Clone, Copy, Subcommand)]
@@ -178,6 +183,8 @@ async fn execute(command: DaemonCommand) -> Result<Output> {
             commands::start::run(&home, start.into_options()).await?;
             Ok(Output::default())
         }
+        DaemonCommand::Update { check: true } => commands::update::check().await,
+        DaemonCommand::Update { check: false } => commands::update::apply(&home).await,
     }
 }
 

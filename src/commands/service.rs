@@ -61,8 +61,15 @@ pub fn install(home: &Path, host: &ServiceHost, environment: ServiceEnvironment)
 }
 
 pub fn run_in_background(home: &Path) -> Result<()> {
-    let host = ServiceHost::of_this_machine()?;
-    match host.install(&definition(home, ServiceEnvironment::of_this_process()?)?)? {
+    reload(
+        home,
+        &ServiceHost::of_this_machine()?,
+        ServiceEnvironment::of_this_process()?,
+    )
+}
+
+pub fn reload(home: &Path, host: &ServiceHost, environment: ServiceEnvironment) -> Result<()> {
+    match host.install(&definition(home, environment)?)? {
         LoadOutcome::Loaded => Ok(()),
         LoadOutcome::Failed { reason } => bail!(reason),
     }
