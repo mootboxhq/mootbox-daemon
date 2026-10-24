@@ -16,9 +16,11 @@ pub const DEFAULT_RELEASES_URL: &str = "https://github.com/mootboxhq/mootbox-dae
 pub const DEFAULT_SLOTS: u32 = 2;
 pub const DEFAULT_WALL_TIME_MINUTES: u32 = 30;
 pub const DEFAULT_SHUTDOWN_GRACE_SECONDS: u64 = 30;
+pub const DEFAULT_MOOTBOX_URL: &str = "https://mootbox.zbib.dev";
+pub const MOOTBOX_URL_VARIABLE: &str = "MOOTBOX_URL";
 
 pub const NOT_CONNECTED: &str =
-    "this machine is not connected to Mootbox; run mootbox add --mootbox-url <url> inside your repo folder";
+    "this machine is not connected to Mootbox; run mootbox login, then run mootbox inside your repo folder";
 
 const CONFIG_FILE: &str = "daemon.toml";
 const HOME_DIRECTORY: &str = ".mootbox";
@@ -32,6 +34,14 @@ pub struct WorkspaceProfile {
     pub credential: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub workspace_name: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CliSession {
+    pub mootbox_url: String,
+    pub token: String,
+    pub email: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -69,6 +79,8 @@ pub struct DaemonConfig {
     pub provider_command: Option<PathBuf>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max_budget_usd: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub session: Option<CliSession>,
 }
 
 impl Default for DaemonConfig {
@@ -84,6 +96,7 @@ impl Default for DaemonConfig {
             allowed_commands: Vec::new(),
             provider_command: None,
             max_budget_usd: None,
+            session: None,
         }
     }
 }
@@ -217,6 +230,11 @@ mod tests {
         config.provider = "codex".parse().expect("known provider");
         config.model = Some("opus".to_string());
         config.max_budget_usd = Some(2.5);
+        config.session = Some(CliSession {
+            mootbox_url: MOOTBOX_URL.to_string(),
+            token: "mootbox_cli_secret".to_string(),
+            email: "maya@example.com".to_string(),
+        });
         config
     }
 
@@ -363,7 +381,7 @@ mod tests {
         assert!(
             error
                 .to_string()
-                .contains("run mootbox add --mootbox-url <url> inside your repo folder"),
+                .contains("run mootbox login, then run mootbox inside your repo folder"),
             "{error}"
         );
     }

@@ -160,7 +160,7 @@ fn commands_before_connecting_explain_how_to_connect() {
 
     assert!(!output.status.success());
     assert!(
-        String::from_utf8_lossy(&output.stderr).contains("run mootbox add --mootbox-url <url> inside your repo folder")
+        String::from_utf8_lossy(&output.stderr).contains("run mootbox login, then run mootbox inside your repo folder")
     );
 }
 

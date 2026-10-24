@@ -70,7 +70,7 @@ async fn an_unpaired_machine_fails_the_config_check_and_skips_the_server() {
     assert!(
         report
             .line("config")
-            .contains("run mootbox add --mootbox-url <url> inside your repo folder"),
+            .contains("run mootbox login, then run mootbox inside your repo folder"),
         "{}",
         report.line("config")
     );

@@ -134,7 +134,7 @@ fn install_refuses_before_pairing_without_touching_the_service_manager() {
     assert!(
         error
             .to_string()
-            .contains("run mootbox add --mootbox-url <url> inside your repo folder"),
+            .contains("run mootbox login, then run mootbox inside your repo folder"),
         "{error}"
     );
     assert!(!host.file_path().exists());
