@@ -8,7 +8,9 @@ use clap::{Args, Parser, Subcommand};
 use reqwest::Url;
 use uuid::Uuid;
 
+use crate::commands::add::link::{LinkOptions, LinkRequest};
 use crate::commands::add::{AddOptions, AddRequest, Serving};
+use crate::commands::login::LoginOptions;
 use crate::commands::pair::PairOptions;
 use crate::commands::service::ServiceAction as Action;
 use crate::commands::start::StartOptions;
@@ -22,6 +24,8 @@ mod console;
 use console::TerminalConsole;
 
 const DEFAULT_DEVICE_NAME: &str = "runner";
+const MOOTBOX_URL_HELP: &str =
+    "Mootbox server URL [env: MOOTBOX_URL] [default: the server you signed in to, or https://mootbox.zbib.dev]";
 
 static PROVIDER_HELP: LazyLock<String> = LazyLock::new(|| {
     let names = providers::ALL.map(|kind| kind.name()).join(" or ");
@@ -32,10 +36,18 @@ static PROVIDER_HELP: LazyLock<String> = LazyLock::new(|| {
 });
 
 #[derive(Parser)]
-#[command(name = "mootbox", version, about = "Runs your Mootbox assistant on this machine")]
+#[command(
+    name = "mootbox",
+    version,
+    about = "Runs your Mootbox assistant on this machine",
+    long_about = "Runs your Mootbox assistant on this machine.\n\nWithout a command, mootbox signs you in if needed, links the repo folder you are in to a Mootbox project and brings this computer online.",
+    args_conflicts_with_subcommands = true
+)]
 struct Cli {
     #[command(subcommand)]
-    command: DaemonCommand,
+    command: Option<DaemonCommand>,
+    #[arg(long, help = MOOTBOX_URL_HELP)]
+    mootbox_url: Option<Url>,
 }
 
 #[derive(Args)]
@@ -75,6 +87,11 @@ enum DaemonCommand {
         foreground: bool,
         #[command(flatten)]
         start: StartArgs,
+    },
+    #[command(about = "Sign in to Mootbox in your browser and remember it on this computer")]
+    Login {
+        #[arg(long, help = MOOTBOX_URL_HELP)]
+        mootbox_url: Option<Url>,
     },
     #[command(about = "Pair this machine with a Mootbox server")]
     Pair {
@@ -123,7 +140,12 @@ enum ServiceAction {
 }
 
 pub async fn run() -> ExitCode {
-    match execute(Cli::parse().command).await {
+    let cli = Cli::parse();
+    let outcome = match cli.command {
+        Some(command) => execute(command).await,
+        None => link(cli.mootbox_url).await,
+    };
+    match outcome {
         Ok(output) => {
             print(&output);
             ExitCode::SUCCESS
@@ -133,6 +155,37 @@ pub async fn run() -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+async fn link(mootbox_url: Option<Url>) -> Result<Output> {
+    let request = LinkRequest {
+        options: LinkOptions {
+            login: login_options(mootbox_url)?,
+            directory: std::env::current_dir().context("cannot read the current folder")?,
+        },
+        start: StartOptions::default(),
+        serving: Serving::Background,
+    };
+    commands::add::link::run(&config::daemon_home()?, request, &TerminalConsole).await?;
+    Ok(Output::default())
+}
+
+fn login_options(flag: Option<Url>) -> Result<LoginOptions> {
+    Ok(LoginOptions {
+        mootbox_url: flag.map_or_else(mootbox_url_from_environment, |flag| Ok(Some(flag)))?,
+        device_name: default_device_name(),
+        poll_interval: PAIRING_POLL_INTERVAL,
+    })
+}
+
+fn mootbox_url_from_environment() -> Result<Option<Url>> {
+    std::env::var(config::MOOTBOX_URL_VARIABLE)
+        .ok()
+        .filter(|text| !text.is_empty())
+        .map(|text| {
+            Url::parse(&text).with_context(|| format!("{} {text:?} is not a URL", config::MOOTBOX_URL_VARIABLE))
+        })
+        .transpose()
 }
 
 async fn execute(command: DaemonCommand) -> Result<Output> {
@@ -178,6 +231,9 @@ async fn execute(command: DaemonCommand) -> Result<Output> {
                 poll_interval: PAIRING_POLL_INTERVAL,
             };
             commands::pair::run(&home, &options, &TerminalConsole).await
+        }
+        DaemonCommand::Login { mootbox_url } => {
+            commands::login::run(&home, &login_options(mootbox_url)?, &TerminalConsole).await
         }
         DaemonCommand::Allow { rule } => commands::allow::run(&home, &rule),
         DaemonCommand::Status => commands::status::run(&home),

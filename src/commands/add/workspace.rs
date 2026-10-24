@@ -136,7 +136,7 @@ pub fn confirm_link(mootbox_url: &Url, user_code: &str, paired: &[&WorkspaceProf
     Ok(link)
 }
 
-fn is_on_mootbox(profile: &WorkspaceProfile, mootbox_url: &Url) -> bool {
+pub(super) fn is_on_mootbox(profile: &WorkspaceProfile, mootbox_url: &Url) -> bool {
     Url::parse(&profile.mootbox_url).is_ok_and(|saved| saved == *mootbox_url)
 }
 

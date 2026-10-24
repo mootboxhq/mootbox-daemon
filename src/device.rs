@@ -68,10 +68,25 @@ impl DeviceReport {
     }
 
     pub fn contract<Contract: DeserializeOwned>(&self) -> Result<Contract> {
-        serde_json::to_value(self)
-            .and_then(serde_json::from_value)
-            .context("the device report does not fit the runner protocol")
+        contract_of(self)
     }
+
+    pub fn named_contract<Contract: DeserializeOwned>(&self, name: &str) -> Result<Contract> {
+        contract_of(&NamedDevice { name, report: self })
+    }
+}
+
+#[derive(Serialize)]
+struct NamedDevice<'a> {
+    name: &'a str,
+    #[serde(flatten)]
+    report: &'a DeviceReport,
+}
+
+fn contract_of<Contract: DeserializeOwned>(device: &impl Serialize) -> Result<Contract> {
+    serde_json::to_value(device)
+        .and_then(serde_json::from_value)
+        .context("the device report does not fit the runner protocol")
 }
 
 fn provider_status(install: &Install, sign_ins: &[SignIn]) -> ProviderStatus {

@@ -18,6 +18,7 @@ use crate::run::{self, RunTiming};
 
 const NOT_SIGNED_IN: &str = "is not ready: authentication_required";
 
+#[derive(Default)]
 pub struct StartOptions {
     pub provider: Option<ProviderKind>,
     pub slots: Option<u32>,

@@ -15,6 +15,7 @@ use crate::lock;
 use crate::providers::{ProviderKind, probe};
 
 mod checkout;
+pub mod link;
 mod placement;
 mod workspace;
 
