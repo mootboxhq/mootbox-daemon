@@ -22,12 +22,15 @@ cargo install --path .
 mootbox --help
 ```
 
-In a checkout registered to a Mootbox project, connect the local checkout and pair the device when prompted:
+Sign in once, then run `mootbox` inside a checkout. It links the repository to a Mootbox project (asking in the browser when it cannot tell which one), connects the checkout and brings this computer online:
 
 ```sh
+mootbox login
 cd ~/code/checkout
-mootbox add --mootbox-url https://mootbox.example.com
+mootbox
 ```
+
+Both use `https://mootbox.zbib.dev` unless you pass `--mootbox-url` or set `MOOTBOX_URL`. `mootbox add --mootbox-url https://mootbox.example.com` still connects a checkout by pairing the device.
 
 To pair a device on its own, create a code with **Pair a device** on the Devices page and run `mootbox pair --mootbox-url https://mootbox.example.com --code ABCD-EFGH`. Without `--code`, `mootbox pair` asks for one, or prints a code to enter on the web when you leave it empty.
 
@@ -59,7 +62,7 @@ Mootbox's runner API and this daemon use **protocol 10** (`x-mootbox-runner-prot
 | Change | Where |
 | --- | --- |
 | A CLI flag or subcommand | `src/cli/mod.rs` (clap definitions, dispatch, printing) |
-| What a command does | `src/commands/<name>.rs` (`add/` is split into checkout, workspace and placement) |
+| What a command does | `src/commands/<name>.rs` (`add/` is split into checkout, workspace, placement and link, the bare `mootbox` flow) |
 | A coding-agent CLI (Claude Code, Codex) | `src/providers/<name>/` implementing `providers::Provider` |
 | Version and sign-in probes | `src/providers/probe.rs` |
 | Claim loop, workspaces, reconcile, config reload | `src/daemon/` |
@@ -115,7 +118,7 @@ Native Windows x64 is distributed as `mootbox-windows-x64.zip`, containing `moot
 & ([scriptblock]::Create((Invoke-RestMethod https://github.com/mootboxhq/mootbox-daemon/releases/latest/download/install.ps1)))
 ```
 
-For another server or an explicit project, append `-MootboxUrl https://your-server.example -Workspace <workspace-id> -Project <project-id>`. The installer checks the archive SHA256, adds the user install directory to PATH, and runs the same `mootbox add` flow. `mootbox service install` uses a per-user Task Scheduler task at login; `mootbox service uninstall` removes it. `mootbox update` safely replaces the running Windows executable.
+For another server or an explicit project, append `-MootboxUrl https://your-server.example -Workspace <workspace-id> -Project <project-id>`. The installer checks the archive SHA256, adds the user install directory to PATH, and runs `mootbox` in the repository, or `mootbox add` when `-Workspace` or `-Project` is given. `mootbox service install` uses a per-user Task Scheduler task at login; `mootbox service uninstall` removes it. `mootbox update` safely replaces the running Windows executable.
 
 Each Unix archive holds `mootbox` (mode `0755`) and `README.md` at its top level, so `tar -xzf mootbox-<os>-<arch>.tar.gz` yields `mootbox` directly. Asset names carry no version, so the latest ones download from `https://github.com/mootboxhq/mootbox-daemon/releases/latest/download/<asset>`.
 
