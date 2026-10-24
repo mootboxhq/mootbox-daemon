@@ -12,10 +12,12 @@ use crate::config::WorkspaceProfile;
 
 use crate::contracts::{
     ClaimPairingCodeRequest, ClaimPairingCodeResponse, ClaimRequest, ClaimResponse, CompleteRunRequest,
-    CompleteRunResponse, Error as ErrorBody, ErrorErrorCategory, ExchangePairingRequest, ExchangePairingResponse,
-    HealthResponse, HeartbeatRequest, HeartbeatResponse, MatchRepositoriesRequest, MatchRepositoriesResponse,
-    RegisterRepositoryRequest, RegisterRepositoryResponse, RunEventRequest, RunEventResponse, StartPairingRequest,
-    StartPairingResponse, UpsertConnectionRequest, UpsertConnectionResponse,
+    CompleteRunResponse, Error as ErrorBody, ErrorErrorCategory, ExchangeCliLoginRequest, ExchangeCliLoginResponse,
+    ExchangePairingRequest, ExchangePairingResponse, ExchangeRepositoryLinkResponse, HealthResponse, HeartbeatRequest,
+    HeartbeatResponse, MatchRepositoriesRequest, MatchRepositoriesResponse, RegisterRepositoryRequest,
+    RegisterRepositoryResponse, RunEventRequest, RunEventResponse, StartCliLoginRequest, StartCliLoginResponse,
+    StartPairingRequest, StartPairingResponse, StartRepositoryLinkRequest, StartRepositoryLinkResponse,
+    UpsertConnectionRequest, UpsertConnectionResponse,
 };
 
 pub const RUNNER_PROTOCOL_HEADER: &str = "x-mootbox-runner-protocol";
@@ -25,6 +27,7 @@ const REQUEST_ID_HEADER: &str = "x-request-id";
 const TRACEPARENT_HEADER: &str = "traceparent";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 const SPAN_ID_LENGTH: usize = 16;
+const HTTP_UNAUTHORIZED: u16 = 401;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApiError {
@@ -105,6 +108,16 @@ impl ApiError {
         )
     }
 
+    pub fn is_unauthorized(&self) -> bool {
+        matches!(
+            self,
+            Self::Mootbox {
+                status: HTTP_UNAUTHORIZED,
+                ..
+            }
+        )
+    }
+
     pub fn is_lease_lost(&self) -> bool {
         matches!(
             self,
@@ -166,6 +179,31 @@ impl MootboxClient {
     ) -> Result<ExchangePairingResponse, ApiError> {
         let path = format!("/runner/pairings/{pairing_id}/exchange");
         self.send(Call::new(Method::POST, path, request)).await
+    }
+
+    pub async fn start_login(&self, request: &StartCliLoginRequest) -> Result<StartCliLoginResponse, ApiError> {
+        self.send(Call::new(Method::POST, "/runner/logins", request)).await
+    }
+
+    pub async fn exchange_login(
+        &self,
+        login_id: Uuid,
+        request: &ExchangeCliLoginRequest,
+    ) -> Result<ExchangeCliLoginResponse, ApiError> {
+        let path = format!("/runner/logins/{login_id}/exchange");
+        self.send(Call::new(Method::POST, path, request)).await
+    }
+
+    pub async fn start_link(
+        &self,
+        request: &StartRepositoryLinkRequest,
+    ) -> Result<StartRepositoryLinkResponse, ApiError> {
+        self.send(Call::new(Method::POST, "/runner/links", request)).await
+    }
+
+    pub async fn exchange_link(&self, link_id: Uuid) -> Result<ExchangeRepositoryLinkResponse, ApiError> {
+        let path = format!("/runner/links/{link_id}/exchange");
+        self.send(Call::<()>::without_body(Method::POST, path)).await
     }
 
     pub async fn match_repository(
