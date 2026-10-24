@@ -401,3 +401,28 @@ async fn bare_mootbox_outside_a_repository_says_where_to_run_it() {
     );
     assert!(server.received_requests().await.expect("recording").is_empty());
 }
+
+#[tokio::test]
+async fn a_minted_runner_is_saved_even_when_connecting_the_checkout_fails() {
+    let server = MockServer::start().await;
+    mount_link_start(&server, SAVED_TOKEN, LINKED_WITH_RUNNER_RESPONSE).await;
+    runner_route("PUT", CONNECTIONS_ROUTE)
+        .respond_with(ResponseTemplate::new(HTTP_FORBIDDEN).set_body_json(fixture("error.repository-not-found.json")))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let home = home_with(&signed_in_config(&server));
+    let repository = checkout_repository("checkout", ORIGIN);
+
+    link::link(
+        home.path(),
+        &link_options(&server, &repository.path),
+        &ScriptedConsole::default(),
+    )
+    .await
+    .expect_err("connecting fails");
+
+    let after = saved(home.path());
+    assert_eq!(after.workspaces, [minted_profile(&server)]);
+    assert!(after.connections.is_empty());
+}

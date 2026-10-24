@@ -184,6 +184,9 @@ impl Linking<'_> {
     async fn attach(&self, session: &CliSession, checkout: &LocalCheckout, linked: &Linked) -> Result<()> {
         let mut config = config::load_or_start_fresh(self.home)?;
         let profile = linked_profile(&mut config, session, linked)?;
+        if linked.runner.is_some() {
+            config::save(self.home, &config)?;
+        }
         let client = MootboxClient::for_profile(&profile)?;
         let connection_id = placement::connect_checkout(&client, checkout, linked.attachment()).await?;
         record_connection(
