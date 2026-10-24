@@ -29,7 +29,7 @@ const SPAN_ID_LENGTH: usize = 16;
 #[derive(Debug, thiserror::Error)]
 pub enum ApiError {
     #[error(
-        "the Mootbox server requires a newer mootbox (this one speaks runner protocol {RUNNER_PROTOCOL_VERSION}): {message}"
+        "the Mootbox server requires a newer mootbox (this one speaks runner protocol {RUNNER_PROTOCOL_VERSION}): {message}; run mootbox update"
     )]
     UpgradeRequired { message: String },
     #[error("Mootbox refused the request ({category}, HTTP {status}): {message}")]

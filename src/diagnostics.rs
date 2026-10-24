@@ -190,7 +190,7 @@ async fn server_checks(profile: &WorkspaceProfile) -> Vec<Check> {
             Check::ok("server", format!("{} answered", profile.mootbox_url)),
             Check::fail(
                 "protocol",
-                format!("runner protocol {RUNNER_PROTOCOL_VERSION} refused: {message}"),
+                format!("runner protocol {RUNNER_PROTOCOL_VERSION} refused: {message}; run mootbox update"),
             ),
         ],
         Err(error) => vec![Check::fail("server", error.to_string())],
