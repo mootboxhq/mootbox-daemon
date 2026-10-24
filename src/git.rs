@@ -130,7 +130,10 @@ pub async fn has_remote(repository: &Path, remote: &str) -> bool {
 }
 
 pub async fn top_level(path: &Path) -> Result<PathBuf> {
-    git(path, ["rev-parse", "--show-toplevel"]).await.map(PathBuf::from)
+    let root = git(path, ["rev-parse", "--show-toplevel"]).await?;
+    PathBuf::from(root)
+        .canonicalize()
+        .context("cannot resolve the repository root")
 }
 
 pub async fn remotes(repository: &Path) -> Result<Vec<Remote>> {
