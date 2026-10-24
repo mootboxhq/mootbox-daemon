@@ -8,7 +8,7 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 use uuid::Uuid;
 
-use crate::config::WorkspaceProfile;
+use crate::config::{CliSession, WorkspaceProfile};
 
 use crate::contracts::{
     ClaimPairingCodeRequest, ClaimPairingCodeResponse, ClaimRequest, ClaimResponse, CompleteRunRequest,
@@ -149,6 +149,10 @@ impl MootboxClient {
             mootbox_url_of(profile)?,
             profile.credential.clone(),
         ))
+    }
+
+    pub fn for_session(session: &CliSession) -> anyhow::Result<Self> {
+        Ok(Self::authenticated(session.server()?, session.token.clone()))
     }
 
     pub fn new(base_url: Url, credential: Option<String>) -> Self {

@@ -3,6 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
+use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -110,6 +111,17 @@ impl WorkspaceProfile {
 
     fn is_same_workspace(&self, other: &WorkspaceProfile) -> bool {
         self.mootbox_url == other.mootbox_url && self.workspace_id == other.workspace_id
+    }
+}
+
+impl CliSession {
+    pub fn server(&self) -> Result<Url> {
+        Url::parse(&self.mootbox_url)
+            .with_context(|| format!("mootbox_url {:?} of the saved sign-in is not a URL", self.mootbox_url))
+    }
+
+    pub fn is_on(&self, mootbox_url: &Url) -> bool {
+        self.server().is_ok_and(|server| server == *mootbox_url)
     }
 }
 

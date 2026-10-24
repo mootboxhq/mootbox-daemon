@@ -4,6 +4,7 @@ use reqwest::Url;
 pub mod add;
 pub mod allow;
 pub mod doctor;
+pub mod login;
 pub mod pair;
 pub mod service;
 pub mod start;
