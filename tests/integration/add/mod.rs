@@ -27,6 +27,7 @@ use crate::harness::{self, CLAIMING_PAUSED, requests_to, run_until_logged};
 
 mod checkouts;
 mod cli;
+mod link;
 mod projects;
 mod workspaces;
 
@@ -56,6 +57,7 @@ struct ScriptedConsole {
     answers: Mutex<VecDeque<String>>,
     questions: Mutex<Vec<(String, Vec<String>)>>,
     links: Mutex<Vec<Url>>,
+    shown: Mutex<Vec<String>>,
 }
 
 impl ScriptedConsole {
@@ -72,6 +74,10 @@ impl ScriptedConsole {
 
     fn links(&self) -> Vec<Url> {
         self.links.lock().expect("links").clone()
+    }
+
+    fn shown(&self) -> Vec<String> {
+        self.shown.lock().expect("shown").clone()
     }
 }
 
@@ -102,7 +108,9 @@ impl Console for ScriptedConsole {
         self.links.lock().expect("links").push(link.clone());
     }
 
-    fn show(&self, _line: &str) {}
+    fn show(&self, line: &str) {
+        self.shown.lock().expect("shown").push(line.to_string());
+    }
 
     fn warn(&self, _line: &str) {}
 }
