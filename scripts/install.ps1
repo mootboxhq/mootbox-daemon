@@ -60,9 +60,15 @@ if (($userPath -split ';') -notcontains $installDirectory) {
     [Environment]::SetEnvironmentVariable('Path', "$installDirectory;$userPath", 'User')
 }
 if (($env:Path -split ';') -notcontains $installDirectory) { $env:Path = "$installDirectory;$env:Path" }
-$arguments = @('add', '--mootbox-url', $MootboxUrl.AbsoluteUri.TrimEnd('/'))
-if ($Workspace -ne [Guid]::Empty) { $arguments += @('--workspace', $Workspace.ToString()) }
-if ($Project -ne [Guid]::Empty) { $arguments += @('--project', $Project.ToString()) }
-Write-Host 'Connecting this repository. Confirm the device in your browser, then return here to finish.'
+$mootboxUrl = $MootboxUrl.AbsoluteUri.TrimEnd('/')
+if ($Workspace -eq [Guid]::Empty -and $Project -eq [Guid]::Empty) {
+    $arguments = @('--mootbox-url', $mootboxUrl)
+    Write-Host 'Connecting this repository. Sign in and choose a project in your browser if asked, then return here to finish.'
+} else {
+    $arguments = @('add', '--mootbox-url', $mootboxUrl)
+    if ($Workspace -ne [Guid]::Empty) { $arguments += @('--workspace', $Workspace.ToString()) }
+    if ($Project -ne [Guid]::Empty) { $arguments += @('--project', $Project.ToString()) }
+    Write-Host 'Connecting this repository. Confirm the device in your browser, then return here to finish.'
+}
 & $executable @arguments
 if ($LASTEXITCODE -ne 0) { throw 'Mootbox setup did not finish. Check the message above, then run the same command again.' }
