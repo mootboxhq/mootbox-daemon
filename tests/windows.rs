@@ -205,3 +205,62 @@ async fn update_verifies_a_zip_and_replaces_a_running_native_executable() {
         .expect("runs updated executable");
     assert_eq!(String::from_utf8_lossy(&version.stdout).trim(), "mootbox 999.0.0");
 }
+
+#[test]
+fn the_powershell_installer_parses_in_windows_powershell() {
+    let installer = Path::new(env!("CARGO_MANIFEST_DIR")).join("scripts/install.ps1");
+    let output = platform::powershell("$errors = $null; $tokens = $null; [System.Management.Automation.Language.Parser]::ParseFile($env:MOOTBOX_TEST_INSTALLER, [ref]$tokens, [ref]$errors) | Out-Null; if ($errors.Count -gt 0) { $errors | Out-String | Write-Error; exit 1 }")
+        .env("MOOTBOX_TEST_INSTALLER", installer).output().expect("parses installer");
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+}
+
+#[tokio::test]
+async fn git_for_windows_reports_and_connects_a_local_checkout() {
+    let directory = tempfile::tempdir().expect("temp dir");
+    let repository = directory.path().join("repo with spaces");
+    fs::create_dir(&repository).expect("repository folder");
+    for arguments in [
+        vec!["init", "-b", "main"],
+        vec!["config", "user.name", "Mootbox test"],
+        vec!["config", "user.email", "test@example.com"],
+        vec!["config", "core.autocrlf", "false"],
+        vec!["remote", "add", "origin", "https://github.com/example/windows.git"],
+    ] {
+        assert!(
+            Command::new("git")
+                .args(arguments)
+                .current_dir(&repository)
+                .status()
+                .expect("git")
+                .success()
+        );
+    }
+    fs::write(repository.join("README.md"), "windows\n").expect("readme");
+    for arguments in [vec!["add", "."], vec!["commit", "-m", "initial"]] {
+        assert!(
+            Command::new("git")
+                .args(arguments)
+                .current_dir(&repository)
+                .status()
+                .expect("git")
+                .success()
+        );
+    }
+    let state = mootbox_daemon::git::checkout_state(&repository)
+        .await
+        .expect("checkout state");
+    assert_eq!(state.branch.as_deref(), Some("main"));
+    assert!(!state.is_dirty);
+    let remotes = mootbox_daemon::git::remotes(&repository).await.expect("remote");
+    assert_eq!(remotes[0].url, "https://github.com/example/windows.git");
+    let target = directory.path().join("worktrees");
+    let worktree = mootbox_daemon::git::open_branch_worktree(&mootbox_daemon::git::WorktreeRequest {
+        repository: &repository,
+        worktrees: &target,
+        branch: "mootbox/windows",
+        base_ref: "HEAD",
+    })
+    .await
+    .expect("creates a Windows worktree");
+    assert!(worktree.join("README.md").is_file());
+}

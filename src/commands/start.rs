@@ -144,6 +144,25 @@ fn cancel_on_stop_signal(shutdown: CancellationToken) -> Result<()> {
     Ok(())
 }
 
+#[cfg(windows)]
+fn cancel_on_stop_signal(shutdown: CancellationToken) -> Result<()> {
+    let mut interrupt = tokio::signal::windows::ctrl_c().context("cannot listen for Ctrl+C")?;
+    let mut close = tokio::signal::windows::ctrl_close().context("cannot listen for window close")?;
+    let mut logoff = tokio::signal::windows::ctrl_logoff().context("cannot listen for logoff")?;
+    let mut stop = tokio::signal::windows::ctrl_shutdown().context("cannot listen for shutdown")?;
+    tokio::spawn(async move {
+        tokio::select! {
+            _ = interrupt.recv() => {}
+            _ = close.recv() => {}
+            _ = logoff.recv() => {}
+            _ = stop.recv() => {}
+        }
+        info!("shutdown requested; finishing active runs");
+        shutdown.cancel();
+    });
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -184,23 +203,4 @@ mod tests {
             assert!(provider_options(ProviderOptions::default(), &configured(None, Some(budget))).is_err());
         }
     }
-}
-
-#[cfg(windows)]
-fn cancel_on_stop_signal(shutdown: CancellationToken) -> Result<()> {
-    let mut interrupt = tokio::signal::windows::ctrl_c().context("cannot listen for Ctrl+C")?;
-    let mut close = tokio::signal::windows::ctrl_close().context("cannot listen for window close")?;
-    let mut logoff = tokio::signal::windows::ctrl_logoff().context("cannot listen for logoff")?;
-    let mut stop = tokio::signal::windows::ctrl_shutdown().context("cannot listen for shutdown")?;
-    tokio::spawn(async move {
-        tokio::select! {
-            _ = interrupt.recv() => {}
-            _ = close.recv() => {}
-            _ = logoff.recv() => {}
-            _ = stop.recv() => {}
-        }
-        info!("shutdown requested; finishing active runs");
-        shutdown.cancel();
-    });
-    Ok(())
 }

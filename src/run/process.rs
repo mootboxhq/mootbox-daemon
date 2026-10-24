@@ -167,8 +167,9 @@ impl RunningProvider {
     }
 
     #[cfg(windows)]
-    pub async fn terminate(&mut self, _grace: Duration) {
+    pub async fn terminate(&mut self, grace: Duration) {
         let _ = self.child.start_kill();
+        let _ = tokio::time::timeout(grace.max(Duration::from_secs(1)), self.child.wait()).await;
     }
 
     pub async fn finish(mut self) -> io::Result<ProviderReport> {
