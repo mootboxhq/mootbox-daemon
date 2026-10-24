@@ -28,7 +28,7 @@ impl Output {
 pub trait Console {
     fn choose(&self, question: &str, choices: &[String]) -> Result<usize>;
     fn ask(&self, question: &str, suggestion: &str) -> Result<String>;
-    fn open_link(&self, link: &Url);
+    fn open_link(&self, prompt: &str, link: &Url);
     fn show(&self, line: &str);
     fn warn(&self, line: &str);
 }

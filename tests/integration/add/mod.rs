@@ -98,7 +98,7 @@ impl Console for ScriptedConsole {
         }
     }
 
-    fn open_link(&self, link: &Url) {
+    fn open_link(&self, _prompt: &str, link: &Url) {
         self.links.lock().expect("links").push(link.clone());
     }
 

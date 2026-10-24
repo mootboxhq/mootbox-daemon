@@ -13,6 +13,7 @@ use crate::config::{DaemonConfig, WorkspaceProfile};
 use crate::pairing::{self, PairingRequest};
 
 const CONFIRM_PATH: &str = "devices/confirm";
+const CONFIRM_DEVICE: &str = "Confirm this device in your browser";
 const CODE_PARAMETER: &str = "code";
 const PAIRED_PARAMETER: &str = "paired";
 const PAIRED_SEPARATOR: &str = ",";
@@ -91,7 +92,7 @@ impl Adding<'_> {
                 link.query_pairs_mut()
                     .append_pair("workspace", &workspace_id.to_string());
             }
-            self.console.open_link(&link);
+            self.console.open_link(CONFIRM_DEVICE, &link);
             Ok(())
         })
         .await

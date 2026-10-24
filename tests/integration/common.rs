@@ -111,7 +111,7 @@ impl Console for SilentConsole {
         bail!("unexpected question: {question}")
     }
 
-    fn open_link(&self, _link: &Url) {}
+    fn open_link(&self, _prompt: &str, _link: &Url) {}
 
     fn show(&self, _line: &str) {}
 

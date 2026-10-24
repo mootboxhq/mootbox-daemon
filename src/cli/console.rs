@@ -44,8 +44,8 @@ impl Console for TerminalConsole {
         Ok(answer)
     }
 
-    fn open_link(&self, link: &Url) {
-        eprintln!("Confirm this device in your browser: {link}");
+    fn open_link(&self, prompt: &str, link: &Url) {
+        eprintln!("{prompt}: {link}");
         #[cfg(unix)]
         let mut opener = {
             let mut command = Command::new(BROWSER_OPENER);
