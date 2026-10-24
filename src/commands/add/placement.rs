@@ -194,16 +194,20 @@ pub async fn connect_checkout(
     checkout: &LocalCheckout,
     attachment: Attachment,
 ) -> Result<Uuid> {
-    let request = UpsertConnectionRequest {
+    let request = connection_request(checkout, attachment)?;
+    let connected = client.upsert_connection(&request).await.map_err(server_message)?;
+    Ok(connected.connection_id)
+}
+
+pub fn connection_request(checkout: &LocalCheckout, attachment: Attachment) -> Result<UpsertConnectionRequest> {
+    Ok(UpsertConnectionRequest {
         repository_id: attachment.repository_id,
         project_id: attachment.project_id,
         local_key: accepted("local key", &checkout.local_key())?,
         branch: checkout.branch.clone(),
         head_sha: checkout.head_sha.clone(),
         dirty: checkout.is_dirty,
-    };
-    let connected = client.upsert_connection(&request).await.map_err(server_message)?;
-    Ok(connected.connection_id)
+    })
 }
 
 pub fn remembered_projects(config: &DaemonConfig, workspace_id: Uuid, root: &Path) -> BTreeSet<Uuid> {

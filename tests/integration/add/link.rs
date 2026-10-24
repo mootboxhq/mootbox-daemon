@@ -448,3 +448,57 @@ async fn login_without_a_session_signs_in_to_the_server_of_the_saved_workspaces(
         Some(mootbox_url(&server).to_string())
     );
 }
+
+#[tokio::test]
+async fn a_revoked_saved_runner_is_forgotten_and_the_link_mints_a_fresh_one() {
+    let server = MockServer::start().await;
+    runner_route("POST", LINKS_ROUTE)
+        .and(header("authorization", format!("Bearer {SAVED_TOKEN}").as_str()))
+        .respond_with(ResponseTemplate::new(200).set_body_json(fixture(LINKED_RESPONSE)))
+        .up_to_n_times(1)
+        .expect(1)
+        .mount(&server)
+        .await;
+    mount_link_start(&server, SAVED_TOKEN, LINKED_WITH_RUNNER_RESPONSE).await;
+    authenticated_route("PUT", CONNECTIONS_ROUTE)
+        .respond_with(ResponseTemplate::new(HTTP_UNAUTHORIZED).set_body_json(json!({
+            "error": { "category": "permission_denied", "message": "runner credential is invalid or revoked" }
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let connection_id = Uuid::new_v4();
+    mount_minted_connection(&server, connection_id).await;
+    let mut before = signed_in_config(&server);
+    let revoked = WorkspaceProfile {
+        credential: CREDENTIAL.to_string(),
+        ..minted_profile(&server)
+    };
+    before.upsert_workspace(revoked.clone());
+    let home = home_with(&before);
+    let repository = checkout_repository("checkout", ORIGIN);
+    let console = ScriptedConsole::default();
+
+    let report = link::link(home.path(), &link_options(&server, &repository.path), &console)
+        .await
+        .expect("links");
+
+    assert_linked(&report);
+    assert_eq!(
+        console.warned(),
+        [format!(
+            "This computer's access to {} was removed; reconnecting.",
+            revoked.display_name()
+        )]
+    );
+    let started = requests_to(&server, LINKS_ROUTE).await;
+    assert_eq!(started.len(), 2);
+    assert_eq!(started[0]["paired_workspace_ids"], json!([revoked.workspace_id]));
+    assert!(started[1].get("paired_workspace_ids").is_none());
+    let after = saved(home.path());
+    assert_eq!(after.workspaces, [minted_profile(&server)]);
+    assert_eq!(
+        connection_of(&after, connection_id),
+        &linked_connection(&repository, revoked.workspace_id)
+    );
+}

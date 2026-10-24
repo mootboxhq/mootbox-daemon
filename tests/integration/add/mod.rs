@@ -58,6 +58,7 @@ struct ScriptedConsole {
     questions: Mutex<Vec<(String, Vec<String>)>>,
     links: Mutex<Vec<Url>>,
     shown: Mutex<Vec<String>>,
+    warned: Mutex<Vec<String>>,
 }
 
 impl ScriptedConsole {
@@ -78,6 +79,10 @@ impl ScriptedConsole {
 
     fn shown(&self) -> Vec<String> {
         self.shown.lock().expect("shown").clone()
+    }
+
+    fn warned(&self) -> Vec<String> {
+        self.warned.lock().expect("warned").clone()
     }
 }
 
@@ -112,7 +117,9 @@ impl Console for ScriptedConsole {
         self.shown.lock().expect("shown").push(line.to_string());
     }
 
-    fn warn(&self, _line: &str) {}
+    fn warn(&self, line: &str) {
+        self.warned.lock().expect("warned").push(line.to_string());
+    }
 }
 
 fn git(directory: &Path, arguments: &[&str]) {

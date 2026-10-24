@@ -65,6 +65,11 @@ struct MintedRunner {
     credential: String,
 }
 
+enum Attached {
+    Connected,
+    Revoked(WorkspaceProfile),
+}
+
 struct Linking<'a> {
     home: &'a Path,
     options: &'a LinkOptions,
@@ -112,7 +117,10 @@ pub async fn link(home: &Path, options: &LinkOptions, console: &dyn Console) -> 
     let linking = Linking { home, options, console };
     let session = login::current_session(home, &options.login, console).await?;
     let (session, linked) = linking.linked(session, &checkout).await?;
-    linking.attach(&session, &checkout, &linked).await?;
+    let linked = match linking.attach(&session, &checkout, &linked).await? {
+        Attached::Connected => linked,
+        Attached::Revoked(profile) => linking.relinked(session, &checkout, &profile).await?,
+    };
     Ok(LinkReport {
         workspace_name: linked.workspace.name,
         project_name: linked.project.name,
@@ -181,20 +189,52 @@ impl Linking<'_> {
         })
     }
 
-    async fn attach(&self, session: &CliSession, checkout: &LocalCheckout, linked: &Linked) -> Result<()> {
+    async fn attach(&self, session: &CliSession, checkout: &LocalCheckout, linked: &Linked) -> Result<Attached> {
         let mut config = config::load_or_start_fresh(self.home)?;
         let profile = linked_profile(&mut config, session, linked)?;
         if linked.runner.is_some() {
             config::save(self.home, &config)?;
         }
-        let client = MootboxClient::for_profile(&profile)?;
-        let connection_id = placement::connect_checkout(&client, checkout, linked.attachment()).await?;
+        let request = placement::connection_request(checkout, linked.attachment())?;
+        let connected = match MootboxClient::for_profile(&profile)?.upsert_connection(&request).await {
+            Err(error) if error.is_unauthorized() && linked.runner.is_none() => return Ok(Attached::Revoked(profile)),
+            connected => connected.map_err(server_message)?,
+        };
         record_connection(
             &mut config,
-            connection_id,
+            connected.connection_id,
             checkout.connection(profile.workspace_id, linked.attachment()),
         );
-        config::save(self.home, &config)
+        config::save(self.home, &config)?;
+        Ok(Attached::Connected)
+    }
+
+    async fn relinked(
+        &self,
+        session: CliSession,
+        checkout: &LocalCheckout,
+        revoked: &WorkspaceProfile,
+    ) -> Result<Linked> {
+        self.forget(revoked)?;
+        let (session, linked) = self.linked(session, checkout).await?;
+        match self.attach(&session, checkout, &linked).await? {
+            Attached::Connected => Ok(linked),
+            Attached::Revoked(profile) => Err(anyhow!(
+                "This computer's access to {} was removed. Run mootbox again.",
+                profile.display_name()
+            )),
+        }
+    }
+
+    fn forget(&self, revoked: &WorkspaceProfile) -> Result<()> {
+        let mut config = config::load_or_start_fresh(self.home)?;
+        config.workspaces.retain(|saved| saved != revoked);
+        config::save(self.home, &config)?;
+        self.console.warn(&format!(
+            "This computer's access to {} was removed; reconnecting.",
+            revoked.display_name()
+        ));
+        Ok(())
     }
 }
 
