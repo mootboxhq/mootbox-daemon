@@ -1,3 +1,5 @@
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
 
 pub const EXECUTABLE_NAME: &str = if cfg!(windows) { "mootbox.exe" } else { "mootbox" };
@@ -27,6 +29,8 @@ pub fn provider_program(program: &Path) -> PathBuf {
 #[cfg(windows)]
 pub fn powershell(script: &str) -> std::process::Command {
     let mut command = std::process::Command::new("powershell.exe");
+    command.env_remove("PSModulePath");
+    command.creation_flags(0x0800_0000);
     command.args(["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", script]);
     command
 }
