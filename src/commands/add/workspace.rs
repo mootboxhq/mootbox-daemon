@@ -26,7 +26,7 @@ impl Adding<'_> {
         let profiles: Vec<&WorkspaceProfile> = config
             .workspaces
             .iter()
-            .filter(|profile| is_on_mootbox(profile, &self.mootbox_url))
+            .filter(|profile| profile.is_on(&self.mootbox_url))
             .collect();
         if let Some(workspace_id) = self.options.workspace {
             if let Some(profile) = profiles.iter().find(|profile| profile.workspace_id == workspace_id) {
@@ -125,10 +125,6 @@ pub fn confirm_link(mootbox_url: &Url, user_code: &str, paired: &[&WorkspaceProf
         .append_pair(CODE_PARAMETER, user_code)
         .append_pair(PAIRED_PARAMETER, &paired_ids.join(PAIRED_SEPARATOR));
     Ok(link)
-}
-
-pub(super) fn is_on_mootbox(profile: &WorkspaceProfile, mootbox_url: &Url) -> bool {
-    Url::parse(&profile.mootbox_url).is_ok_and(|saved| saved == *mootbox_url)
 }
 
 fn has_checkout(config: &DaemonConfig, profile: &WorkspaceProfile, root: &Path) -> bool {

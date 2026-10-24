@@ -7,7 +7,6 @@ use uuid::Uuid;
 
 use super::checkout::{LocalCheckout, accepted, without_credentials};
 use super::placement::{self, Attachment};
-use super::workspace::is_on_mootbox;
 use super::{Onboarding, Serving, bring_online, record_connection, server_message};
 use crate::api::{ApiError, MootboxClient};
 use crate::commands::Console;
@@ -37,6 +36,7 @@ pub struct LinkRequest {
 
 #[derive(Debug)]
 pub struct LinkReport {
+    pub mootbox_url: Url,
     pub workspace_name: String,
     pub project_name: String,
     pub chat_url: String,
@@ -105,6 +105,7 @@ pub async fn run(home: &Path, request: LinkRequest, console: &dyn Console) -> Re
     let report = link(home, &request.options, console).await?;
     let onboarding = Onboarding {
         summary: report.lines(),
+        mootbox_url: report.mootbox_url,
         rerun_command: LINK_COMMAND,
         start: request.start,
         serving: request.serving,
@@ -116,12 +117,14 @@ pub async fn link(home: &Path, options: &LinkOptions, console: &dyn Console) -> 
     let checkout = LocalCheckout::of(&options.directory, console).await?;
     let linking = Linking { home, options, console };
     let session = login::current_session(home, &options.login, console).await?;
+    let mootbox_url = session.server()?;
     let (session, linked) = linking.linked(session, &checkout).await?;
     let linked = match linking.attach(&session, &checkout, &linked).await? {
         Attached::Connected => linked,
         Attached::Revoked(profile) => linking.relinked(session, &checkout, &profile).await?,
     };
     Ok(LinkReport {
+        mootbox_url,
         workspace_name: linked.workspace.name,
         project_name: linked.project.name,
         chat_url: linked.chat_url,
@@ -254,7 +257,7 @@ fn linked_profile(config: &mut DaemonConfig, session: &CliSession, linked: &Link
     config
         .workspaces
         .iter()
-        .find(|profile| profile.workspace_id == linked.workspace.id && is_on_mootbox(profile, &mootbox_url))
+        .find(|profile| profile.workspace_id == linked.workspace.id && profile.is_on(&mootbox_url))
         .cloned()
         .ok_or_else(|| {
             anyhow!(
@@ -286,7 +289,7 @@ fn paired_workspace_ids(config: &DaemonConfig, mootbox_url: &Url) -> Vec<Uuid> {
     config
         .workspaces
         .iter()
-        .filter(|profile| is_on_mootbox(profile, mootbox_url))
+        .filter(|profile| profile.is_on(mootbox_url))
         .map(|profile| profile.workspace_id)
         .collect()
 }

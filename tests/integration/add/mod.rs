@@ -21,7 +21,8 @@ use wiremock::matchers::{body_json, body_partial_json};
 use wiremock::{MockServer, ResponseTemplate};
 
 use crate::common::{
-    CREDENTIAL, PAIRED_WORKSPACE_NAME, authenticated_route, fixture, fixture_uuid, paired_home, runner_route,
+    CREDENTIAL, PAIRED_WORKSPACE_NAME, authenticated_route, fixture, fixture_uuid, paired_config, paired_home,
+    runner_route,
 };
 use crate::harness::{self, CLAIMING_PAUSED, requests_to, run_until_logged};
 
@@ -298,6 +299,34 @@ async fn mount_online_routes(server: &MockServer, project_id: Uuid) {
         )
         .mount(server)
         .await;
+}
+
+async fn mount_refused_protocol(server: &MockServer) {
+    runner_route("GET", "/runner/health")
+        .respond_with(
+            ResponseTemplate::new(HTTP_UPGRADE_REQUIRED).set_body_json(fixture("error.upgrade-required.json")),
+        )
+        .with_priority(1)
+        .mount(server)
+        .await;
+}
+
+async fn save_workspace_on_an_outdated_server(home: &Path) -> MockServer {
+    let outdated = MockServer::start().await;
+    mount_refused_protocol(&outdated).await;
+    let mut config = saved(home);
+    config.upsert_workspace(paired_config(&outdated.uri()).workspaces.remove(0));
+    config::save(home, &config).expect("saves config");
+    outdated
+}
+
+fn assert_only_warned_about(stderr: &str, outdated: &MockServer) {
+    assert!(stderr.starts_with("warn protocol: runner protocol"), "{stderr}");
+    assert!(
+        stderr.contains(&format!("{} is not the server this repository uses", outdated.uri())),
+        "{stderr}"
+    );
+    assert!(!stderr.contains("fail"), "{stderr}");
 }
 
 fn expected_report(server: &MockServer) -> String {

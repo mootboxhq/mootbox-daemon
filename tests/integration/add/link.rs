@@ -387,6 +387,30 @@ async fn bare_mootbox_prints_the_link_and_brings_the_computer_online_in_the_back
 }
 
 #[tokio::test]
+async fn bare_mootbox_only_warns_about_another_saved_server_on_an_outdated_protocol() {
+    let server = MockServer::start().await;
+    mount_online_routes(&server, Uuid::new_v4()).await;
+    mount_link_start(&server, SAVED_TOKEN, LINKED_WITH_RUNNER_RESPONSE).await;
+    let home = home_with(&signed_in_config(&server));
+    let outdated = save_workspace_on_an_outdated_server(home.path()).await;
+    let repository = checkout_repository("checkout", ORIGIN);
+    let mut command = mootbox_command(home.path(), &repository.path, &["--mootbox-url", &server.uri()]);
+    command.env(SERVICE_MANAGER_VARIABLE, ACCEPTING_MANAGER);
+
+    let output = output_of(command).await;
+
+    assert!(output.status.success(), "{output:?}");
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout),
+        format!(
+            "{}\n● This computer is online in the background\n{BACKGROUND_HINT}\n",
+            expected_lines().join("\n")
+        )
+    );
+    assert_only_warned_about(&String::from_utf8_lossy(&output.stderr), &outdated);
+}
+
+#[tokio::test]
 async fn bare_mootbox_outside_a_repository_says_where_to_run_it() {
     let server = MockServer::start().await;
     let home = home_with(&signed_in_config(&server));

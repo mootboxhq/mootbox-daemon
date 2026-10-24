@@ -1,6 +1,8 @@
 use std::path::Path;
 
+use anyhow::Result;
 use chrono::{DateTime, TimeDelta, Utc};
+use reqwest::Url;
 
 use crate::api::{ApiError, MootboxClient, RUNNER_PROTOCOL_VERSION, ServerHealth};
 use crate::config::{self, Connection, DaemonConfig, WorkspaceProfile};
@@ -26,6 +28,12 @@ pub struct Check {
     pub detail: String,
 }
 
+#[derive(Debug)]
+pub struct ConnectionDiagnosis {
+    pub checks: Vec<Check>,
+    pub other_servers: Vec<Check>,
+}
+
 impl Check {
     fn new(verdict: Verdict, subject: impl Into<String>, detail: impl Into<String>) -> Self {
         Self {
@@ -45,6 +53,13 @@ impl Check {
 
     fn fail(subject: impl Into<String>, detail: impl Into<String>) -> Self {
         Self::new(Verdict::Fail, subject, detail)
+    }
+
+    fn on_another_server(self, mootbox_url: &str) -> Self {
+        Self::warn(
+            self.subject,
+            format!("{}; {mootbox_url} is not the server this repository uses", self.detail),
+        )
     }
 
     pub fn is_failure(&self) -> bool {
@@ -69,7 +84,37 @@ pub async fn diagnose(home: &Path, service: Option<&ServiceHost>) -> Vec<Check> 
 
 pub async fn diagnose_connection(home: &Path) -> Vec<Check> {
     let config = config::load(home);
-    let selected = match &config {
+    let mut checks = machine_checks(&config).await;
+    for profile in saved_profiles(&config) {
+        checks.extend(server_checks(profile).await);
+    }
+    checks
+}
+
+pub async fn diagnose_connection_to(home: &Path, mootbox_url: &Url) -> ConnectionDiagnosis {
+    let config = config::load(home);
+    let mut diagnosis = ConnectionDiagnosis {
+        checks: machine_checks(&config).await,
+        other_servers: Vec::new(),
+    };
+    for profile in saved_profiles(&config) {
+        let checks = server_checks(profile).await;
+        if profile.is_on(mootbox_url) {
+            diagnosis.checks.extend(checks);
+            continue;
+        }
+        diagnosis.other_servers.extend(
+            checks
+                .into_iter()
+                .filter(Check::is_failure)
+                .map(|check| check.on_another_server(&profile.mootbox_url)),
+        );
+    }
+    diagnosis
+}
+
+async fn machine_checks(config: &Result<DaemonConfig>) -> Vec<Check> {
+    let selected = match config {
         Ok(config) => config.selected_provider(),
         Err(_) => DaemonConfig::default().selected_provider(),
     };
@@ -77,9 +122,13 @@ pub async fn diagnose_connection(home: &Path) -> Vec<Check> {
     checks.push(git_check().await);
     match config {
         Err(error) => checks.push(Check::fail("config", format!("{error:#}"))),
-        Ok(config) => checks.extend(configured_checks(&config).await),
+        Ok(config) => checks.extend(configured_checks(config).await),
     }
     checks
+}
+
+fn saved_profiles(config: &Result<DaemonConfig>) -> &[WorkspaceProfile] {
+    config.as_ref().map_or(&[], |config| &config.workspaces)
 }
 
 async fn configured_checks(config: &DaemonConfig) -> Vec<Check> {
@@ -89,9 +138,6 @@ async fn configured_checks(config: &DaemonConfig) -> Vec<Check> {
     let mut checks = vec![Check::ok("config", paired_summary(config))];
     for connection in config.connections.values() {
         checks.push(repository_check(connection).await);
-    }
-    for profile in &config.workspaces {
-        checks.extend(server_checks(profile).await);
     }
     checks
 }

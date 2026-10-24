@@ -79,6 +79,57 @@ async fn mootbox_add_stops_on_a_failing_check_and_prints_it() {
 }
 
 #[tokio::test]
+async fn mootbox_add_only_warns_about_another_saved_server_on_an_outdated_protocol() {
+    let server = MockServer::start().await;
+    let project_id = Uuid::new_v4();
+    mount_online_routes(&server, project_id).await;
+    let (home, _) = paired_home(&server.uri());
+    let outdated = save_workspace_on_an_outdated_server(home.path()).await;
+    let repository = checkout_repository("checkout", ORIGIN);
+    let project = project_id.to_string();
+    let mut command = mootbox_command(
+        home.path(),
+        &repository.path,
+        &["add", "--mootbox-url", &server.uri(), "--project", &project],
+    );
+    command.env(SERVICE_MANAGER_VARIABLE, ACCEPTING_MANAGER);
+
+    let output = output_of(command).await;
+
+    assert!(output.status.success(), "{output:?}");
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout),
+        format!(
+            "{}● This computer is online in the background\n{BACKGROUND_HINT}\n",
+            expected_report(&server)
+        )
+    );
+    assert_only_warned_about(&String::from_utf8_lossy(&output.stderr), &outdated);
+}
+
+#[tokio::test]
+async fn mootbox_add_stops_when_its_own_server_refuses_the_protocol() {
+    let server = MockServer::start().await;
+    let project_id = Uuid::new_v4();
+    mount_online_routes(&server, project_id).await;
+    mount_refused_protocol(&server).await;
+    let (home, _) = paired_home(&server.uri());
+    let repository = checkout_repository("checkout", ORIGIN);
+    let project = project_id.to_string();
+    let command = mootbox_command(home.path(), &repository.path, &["add", "--project", &project]);
+
+    let output = output_of(command).await;
+
+    let shown = String::from_utf8_lossy(&output.stderr);
+    assert!(!output.status.success());
+    assert!(shown.starts_with("fail protocol: runner protocol"), "{shown}");
+    assert!(
+        shown.ends_with("mootbox: fix the 1 failing check(s) above, then run mootbox add again\n"),
+        "{shown}"
+    );
+}
+
+#[tokio::test]
 async fn mootbox_add_without_a_terminal_lists_the_choices_and_the_project_hint() {
     let server = MockServer::start().await;
     let (home, _) = paired_home(&server.uri());

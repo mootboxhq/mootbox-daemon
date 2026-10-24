@@ -109,6 +109,10 @@ impl WorkspaceProfile {
             .unwrap_or_else(|| self.workspace_id.to_string())
     }
 
+    pub fn is_on(&self, mootbox_url: &Url) -> bool {
+        Url::parse(&self.mootbox_url).is_ok_and(|saved| saved == *mootbox_url)
+    }
+
     fn is_same_workspace(&self, other: &WorkspaceProfile) -> bool {
         self.mootbox_url == other.mootbox_url && self.workspace_id == other.workspace_id
     }

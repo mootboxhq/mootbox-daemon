@@ -73,6 +73,7 @@ pub struct AddRequest {
 
 #[derive(Debug)]
 pub struct AddReport {
+    pub mootbox_url: Url,
     pub mootbox_host: String,
     pub workspace_id: Uuid,
     pub workspace_name: String,
@@ -87,6 +88,7 @@ pub struct AddReport {
 
 struct Onboarding {
     summary: Vec<String>,
+    mootbox_url: Url,
     rerun_command: &'static str,
     start: StartOptions,
     serving: Serving,
@@ -123,6 +125,7 @@ pub async fn run(home: &Path, request: AddRequest, console: &dyn Console) -> Res
     let report = connect(home, request.options, console).await?;
     let onboarding = Onboarding {
         summary: report.lines(),
+        mootbox_url: report.mootbox_url,
         rerun_command: ADD_COMMAND,
         start: request.start,
         serving: request.serving,
@@ -137,7 +140,7 @@ async fn bring_online(home: &Path, onboarding: Onboarding, console: &dyn Console
         console.show(ALREADY_RUNNING);
         return Ok(());
     }
-    require_passing_checks(home, onboarding.rerun_command, console).await?;
+    require_passing_checks(home, &onboarding, console).await?;
     show_summary();
     match onboarding.serving {
         Serving::Foreground => serve_in_foreground(home, onboarding.start, console).await,
@@ -179,6 +182,7 @@ pub async fn connect(home: &Path, options: AddOptions, console: &dyn Console) ->
     } = placement;
     Ok(AddReport {
         mootbox_host: host_of(&adding.mootbox_url),
+        mootbox_url: adding.mootbox_url,
         workspace_id: profile.workspace_id,
         workspace_name: profile.display_name(),
         team_name,
@@ -199,12 +203,12 @@ pub fn background_online_line() -> String {
     format!("{ONLINE_MARK} {ONLINE_SUBJECT} in the background")
 }
 
-async fn require_passing_checks(home: &Path, rerun_command: &str, console: &dyn Console) -> Result<()> {
-    let failures: Vec<Check> = diagnostics::diagnose_connection(home)
-        .await
-        .into_iter()
-        .filter(Check::is_failure)
-        .collect();
+async fn require_passing_checks(home: &Path, onboarding: &Onboarding, console: &dyn Console) -> Result<()> {
+    let diagnosis = diagnostics::diagnose_connection_to(home, &onboarding.mootbox_url).await;
+    for check in &diagnosis.other_servers {
+        console.warn(&check.line());
+    }
+    let failures: Vec<&Check> = diagnosis.checks.iter().filter(|check| check.is_failure()).collect();
     if failures.is_empty() {
         return Ok(());
     }
@@ -212,8 +216,9 @@ async fn require_passing_checks(home: &Path, rerun_command: &str, console: &dyn 
         console.warn(&check.line());
     }
     bail!(
-        "fix the {} failing check(s) above, then run {rerun_command} again",
-        failures.len()
+        "fix the {} failing check(s) above, then run {} again",
+        failures.len(),
+        onboarding.rerun_command
     )
 }
 
