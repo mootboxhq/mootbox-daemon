@@ -23,6 +23,21 @@ pub struct Placement {
     pub team_name: String,
 }
 
+#[derive(Clone, Copy)]
+pub struct Attachment {
+    pub repository_id: Uuid,
+    pub project_id: Uuid,
+}
+
+impl Placement {
+    pub fn attachment(&self) -> Attachment {
+        Attachment {
+            repository_id: self.repository_id,
+            project_id: self.project_id,
+        }
+    }
+}
+
 struct RegistrationTarget {
     team_name: String,
     project_name: String,
@@ -174,10 +189,14 @@ impl Adding<'_> {
     }
 }
 
-pub async fn connect_checkout(client: &MootboxClient, checkout: &LocalCheckout, placement: &Placement) -> Result<Uuid> {
+pub async fn connect_checkout(
+    client: &MootboxClient,
+    checkout: &LocalCheckout,
+    attachment: Attachment,
+) -> Result<Uuid> {
     let request = UpsertConnectionRequest {
-        repository_id: placement.repository_id,
-        project_id: placement.project_id,
+        repository_id: attachment.repository_id,
+        project_id: attachment.project_id,
         local_key: accepted("local key", &checkout.local_key())?,
         branch: checkout.branch.clone(),
         head_sha: checkout.head_sha.clone(),

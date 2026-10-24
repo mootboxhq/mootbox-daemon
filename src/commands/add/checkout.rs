@@ -6,7 +6,7 @@ use reqwest::Url;
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
-use super::placement::Placement;
+use super::placement::Attachment;
 use super::{DETACHED_HEAD, NO_COMMITS, NO_REMOTE, NOT_IN_REPOSITORY, WHICH_REMOTE};
 use crate::commands::Console;
 use crate::config::Connection;
@@ -62,11 +62,11 @@ impl LocalCheckout {
         })
     }
 
-    pub fn connection(&self, workspace_id: Uuid, placement: &Placement) -> Connection {
+    pub fn connection(&self, workspace_id: Uuid, attachment: Attachment) -> Connection {
         Connection {
             workspace_id,
-            repository_id: placement.repository_id,
-            project_ids: BTreeSet::from([placement.project_id]),
+            repository_id: attachment.repository_id,
+            project_ids: BTreeSet::from([attachment.project_id]),
             path: self.root.clone(),
             remote: Some(self.remote.name.clone()),
         }

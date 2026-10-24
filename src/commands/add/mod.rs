@@ -41,6 +41,7 @@ pub const WHICH_TEAM: &str = "Which team should own this repository?";
 pub const WHICH_REMOTE: &str = "Which remote identifies this repository in Mootbox?";
 pub const NEW_PROJECT_NAME: &str = "Project name";
 
+const ADD_COMMAND: &str = "mootbox add";
 const CHECK_MARK: &str = "✓";
 const MISSING_MARK: &str = "✗";
 const ONLINE_MARK: &str = "●";
@@ -83,6 +84,13 @@ pub struct AddReport {
     pub is_daemon_running: bool,
 }
 
+struct Onboarding {
+    summary: Vec<String>,
+    rerun_command: &'static str,
+    start: StartOptions,
+    serving: Serving,
+}
+
 struct Adding<'a> {
     options: &'a AddOptions,
     console: &'a dyn Console,
@@ -108,24 +116,31 @@ impl AddReport {
             readiness,
         ]
     }
-
-    fn show(&self, console: &dyn Console) {
-        self.lines().iter().for_each(|line| console.show(line));
-    }
 }
 
 pub async fn run(home: &Path, request: AddRequest, console: &dyn Console) -> Result<()> {
     let report = connect(home, request.options, console).await?;
-    if report.is_daemon_running {
-        report.show(console);
+    let onboarding = Onboarding {
+        summary: report.lines(),
+        rerun_command: ADD_COMMAND,
+        start: request.start,
+        serving: request.serving,
+    };
+    bring_online(home, onboarding, console).await
+}
+
+async fn bring_online(home: &Path, onboarding: Onboarding, console: &dyn Console) -> Result<()> {
+    let show_summary = || onboarding.summary.iter().for_each(|line| console.show(line));
+    if lock::is_held(home)? {
+        show_summary();
         console.show(ALREADY_RUNNING);
         return Ok(());
     }
-    require_passing_checks(home, console).await?;
-    report.show(console);
-    match request.serving {
-        Serving::Foreground => serve_in_foreground(home, request.start, console).await,
-        Serving::Background => serve_in_background(home, request.start, console).await,
+    require_passing_checks(home, onboarding.rerun_command, console).await?;
+    show_summary();
+    match onboarding.serving {
+        Serving::Foreground => serve_in_foreground(home, onboarding.start, console).await,
+        Serving::Background => serve_in_background(home, onboarding.start, console).await,
     }
 }
 
@@ -146,11 +161,11 @@ pub async fn connect(home: &Path, options: AddOptions, console: &dyn Console) ->
     let client = MootboxClient::for_profile(&profile)?;
     let remembered = placement::remembered_projects(&config, profile.workspace_id, &checkout.root);
     let placement = adding.placement(&client, &checkout, &remembered).await?;
-    let connection_id = placement::connect_checkout(&client, &checkout, &placement).await?;
+    let connection_id = placement::connect_checkout(&client, &checkout, placement.attachment()).await?;
     record_connection(
         &mut config,
         connection_id,
-        checkout.connection(profile.workspace_id, &placement),
+        checkout.connection(profile.workspace_id, placement.attachment()),
     );
     if config != saved {
         config::save(home, &config)?;
@@ -183,7 +198,7 @@ pub fn background_online_line() -> String {
     format!("{ONLINE_MARK} {ONLINE_SUBJECT} in the background")
 }
 
-async fn require_passing_checks(home: &Path, console: &dyn Console) -> Result<()> {
+async fn require_passing_checks(home: &Path, rerun_command: &str, console: &dyn Console) -> Result<()> {
     let failures: Vec<Check> = diagnostics::diagnose_connection(home)
         .await
         .into_iter()
@@ -196,7 +211,7 @@ async fn require_passing_checks(home: &Path, console: &dyn Console) -> Result<()
         console.warn(&check.line());
     }
     bail!(
-        "fix the {} failing check(s) above, then run mootbox add again",
+        "fix the {} failing check(s) above, then run {rerun_command} again",
         failures.len()
     )
 }
