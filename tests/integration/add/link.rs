@@ -356,7 +356,7 @@ async fn a_session_refused_twice_tells_the_user_to_sign_in() {
 
     assert_eq!(
         error.to_string(),
-        "Mootbox CLI session is invalid or revoked; run mootbox login; run mootbox login again"
+        "Mootbox CLI session is invalid or revoked; run mootbox login"
     );
 }
 

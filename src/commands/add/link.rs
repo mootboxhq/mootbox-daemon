@@ -293,7 +293,7 @@ fn paired_workspace_ids(config: &DaemonConfig, mootbox_url: &Url) -> Vec<Uuid> {
 
 fn refused_link(error: ApiError, mootbox_url: &Url) -> anyhow::Error {
     if error.is_unauthorized() {
-        return login::refused_sign_in(error);
+        return server_message(error);
     }
     match error {
         ApiError::Mootbox {

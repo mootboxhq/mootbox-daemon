@@ -113,7 +113,7 @@ async fn signed_in_session(request: &SignIn<'_>, console: &dyn Console) -> Resul
     }
 }
 
-pub(crate) fn refused_sign_in(error: ApiError) -> anyhow::Error {
+fn refused_sign_in(error: ApiError) -> anyhow::Error {
     match error {
         ApiError::Mootbox { message, .. } => anyhow!("{message}; {SIGN_IN_AGAIN}"),
         other => other.into(),
