@@ -17,7 +17,6 @@ The daemon is a separate repository from the `agent-mootbox` TypeScript monorepo
 ```bash
 scripts/check.sh          # fmt + comment ban + contract drift + clippy -D warnings + tests — run before claiming done
 scripts/e2e.sh <path-to-agent-mootbox-repo> --real   # end-to-end against a built mootbox binary with real CLIs
-scripts/dist.sh <out-dir>   # distribution build
 scripts/sync-contracts.sh <path-to-agent-mootbox-repo>
 cargo test --workspace    # 233 tests
 ```
@@ -27,7 +26,7 @@ Integration tests live in `tests/integration/`. They use fakes for the providers
 ## Layout
 
 ```
-src/commands/     one file per CLI command: add, allow, doctor, pair, service, start, status
+src/commands/     one file per CLI command: add, allow, doctor, pair, service, start, status, update
 src/providers/    the provider trait plus one folder per CLI (claude_code, codex)
 src/run/          run execution, worktrees, session resume
 src/daemon/       service loop, claim/poll, lease handling

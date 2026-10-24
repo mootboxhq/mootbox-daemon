@@ -4,9 +4,18 @@ The Mootbox daemon connects a person's local checkouts and locally authenticated
 
 The shared-chat MVP implementation is complete. The Rust formatting, Clippy and test checks pass, and the real Claude/Codex smoke completed two turns per provider and resumed after daemon restart. That smoke used two simulated users and separate daemon homes on one physical machine. Separate-machine/provider-account testing and provider terms review remain open; see [the main repository handover](../agent-mootbox/docs/product/HANDOVER.md) and [status checklist](../agent-mootbox/docs/product/PLAN.md).
 
-## Build and connect
+## Install and connect
 
-Requires the Rust toolchain pinned in `rust-toolchain.toml`.
+Install the latest release for macOS or Linux (x86_64 or aarch64), and update it later in place:
+
+```sh
+curl -fsSL https://mootbox.zbib.dev/install | sh
+mootbox update
+```
+
+`mootbox update` downloads the latest [mootbox-daemon release](https://github.com/mootboxhq/mootbox-daemon/releases), verifies it against the release's `SHA256SUMS`, replaces the running executable and restarts the background service if one is installed. `mootbox update --check` only reports whether a newer release exists.
+
+To build from source instead, with the Rust toolchain pinned in `rust-toolchain.toml`:
 
 ```sh
 cargo install --path .
@@ -32,6 +41,7 @@ mootbox doctor
 mootbox start
 mootbox service install
 mootbox service uninstall
+mootbox update
 ```
 
 The daemon runs in the foreground with `mootbox start`, or through the platform service manager after installation. Use `mootbox --help` for the current command surface and flags.
@@ -55,6 +65,7 @@ Mootbox's runner API and this daemon use **protocol 9** (`x-mootbox-runner-proto
 | Claim loop, workspaces, reconcile, config reload | `src/daemon/` |
 | One claimed run: lease, supervision, prompt, completion | `src/run/` |
 | `mootbox doctor` checks | `src/diagnostics.rs` |
+| Release lookup and checksum verification for `mootbox update` | `src/release.rs` |
 | `~/.mootbox/daemon.toml` | `src/config.rs` |
 | Runner HTTP client | `src/api.rs` (wire types are generated in `src/contracts.rs`) |
 
@@ -85,13 +96,11 @@ scripts/e2e.sh ../agent-mootbox --real
 
 It builds the daemon and runs `scripts/mvp-smoke.mjs` in the main repository against disposable repositories and in-memory Mootbox state. It requires locally authenticated Claude and Codex CLIs and may consume provider usage. Its current evidence covers two simulated users on one physical machine; it is not a separate-machine or separate-provider-account test.
 
-## Distribution
+## Releases
 
-```sh
-scripts/dist.sh <out-dir> [target-triple...]
-```
+Bump `version` in `Cargo.toml` and merge to `main`; CI publishes `v<version>` to [mootbox-daemon releases](https://github.com/mootboxhq/mootbox-daemon/releases). A push whose version already has a release publishes nothing.
 
-The script builds release binaries and writes SHA-256 files. The Mootbox server can serve these through its installer endpoints when configured with `MOOTBOX_DAEMON_DIST_DIR`. Separate-machine distribution testing and applicable provider terms review remain open before distribution.
+Each release carries `mootbox-x86_64-unknown-linux-musl`, `mootbox-aarch64-unknown-linux-musl`, `mootbox-x86_64-apple-darwin`, `mootbox-aarch64-apple-darwin` and a `SHA256SUMS` file in `sha256sum` format. The latest assets download from `https://github.com/mootboxhq/mootbox-daemon/releases/latest/download/<asset>`.
 
 ## Contract refresh
 
