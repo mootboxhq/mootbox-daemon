@@ -1,7 +1,6 @@
-use std::collections::BTreeSet;
 use std::path::Path;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result, anyhow, bail};
 use reqwest::Url;
 
 use super::checkout::{LocalCheckout, matched_remote};
@@ -114,15 +113,7 @@ pub fn chosen_mootbox_url(flag: Option<&Url>, config: &DaemonConfig) -> Result<U
     if let Some(mootbox_url) = flag {
         return Ok(mootbox_url.clone());
     }
-    let saved: BTreeSet<Url> = config
-        .workspaces
-        .iter()
-        .filter_map(|profile| Url::parse(&profile.mootbox_url).ok())
-        .collect();
-    match Vec::from_iter(saved).as_slice() {
-        [only] => Ok(only.clone()),
-        _ => bail!(NO_MOOTBOX_URL),
-    }
+    config.shared_mootbox_url().ok_or_else(|| anyhow!(NO_MOOTBOX_URL))
 }
 
 pub fn confirm_link(mootbox_url: &Url, user_code: &str, paired: &[&WorkspaceProfile]) -> Result<Url> {

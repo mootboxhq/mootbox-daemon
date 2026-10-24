@@ -426,3 +426,25 @@ async fn a_minted_runner_is_saved_even_when_connecting_the_checkout_fails() {
     assert_eq!(after.workspaces, [minted_profile(&server)]);
     assert!(after.connections.is_empty());
 }
+
+#[tokio::test]
+async fn login_without_a_session_signs_in_to_the_server_of_the_saved_workspaces() {
+    let server = MockServer::start().await;
+    mount_login(&server).await;
+    let mut before = fake_provider_config();
+    before.upsert_workspace(minted_profile(&server));
+    let home = home_with(&before);
+    let options = LoginOptions {
+        mootbox_url: None,
+        ..login_options(&server)
+    };
+
+    login::run(home.path(), &options, &ScriptedConsole::default())
+        .await
+        .expect("signs in");
+
+    assert_eq!(
+        saved(home.path()).session.map(|session| session.mootbox_url),
+        Some(mootbox_url(&server).to_string())
+    );
+}

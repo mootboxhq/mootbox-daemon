@@ -28,8 +28,11 @@ impl LoginOptions {
         if let Some(mootbox_url) = &self.mootbox_url {
             return Ok(mootbox_url.clone());
         }
-        match &config.session {
-            Some(session) => session.server(),
+        if let Some(session) = &config.session {
+            return session.server();
+        }
+        match config.shared_mootbox_url() {
+            Some(mootbox_url) => Ok(mootbox_url),
             None => Url::parse(DEFAULT_MOOTBOX_URL).context("the default Mootbox URL is not a URL"),
         }
     }

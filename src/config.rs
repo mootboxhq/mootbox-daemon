@@ -137,6 +137,18 @@ impl DaemonConfig {
         }
     }
 
+    pub fn shared_mootbox_url(&self) -> Option<Url> {
+        let saved: BTreeSet<Url> = self
+            .workspaces
+            .iter()
+            .filter_map(|profile| Url::parse(&profile.mootbox_url).ok())
+            .collect();
+        match Vec::from_iter(saved).as_slice() {
+            [only] => Some(only.clone()),
+            _ => None,
+        }
+    }
+
     pub fn upsert_connection(&mut self, id: Uuid, connection: Connection) {
         self.connections.insert(id, connection);
     }
