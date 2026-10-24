@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "default_branch": {
+      "default": "main",
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    },
+    "device": {
+      "properties": {
+        "daemon_version": {
+          "maxLength": 100,
+          "minLength": 1,
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 100,
+          "minLength": 1,
+          "type": "string"
+        },
+        "os": {
+          "enum": [
+            "macOS",
+            "Linux",
+            "Windows",
+            "other"
+          ],
+          "type": "string"
+        },
+        "os_version": {
+          "anyOf": [
+            {
+              "maxLength": 100,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "providers": {
+          "items": {
+            "properties": {
+              "installed": {
+                "type": "boolean"
+              },
+              "name": {
+                "enum": [
+                  "claude-code",
+                  "codex"
+                ],
+                "type": "string"
+              },
+              "signed_in": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "version": {
+                "anyOf": [
+                  {
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "installed",
+              "version",
+              "signed_in"
+            ],
+            "type": "object"
+          },
+          "maxItems": 16,
+          "type": "array"
+        }
+      },
+      "required": [
+        "os",
+        "os_version",
+        "daemon_version",
+        "providers",
+        "name"
+      ],
+      "type": "object"
+    },
+    "name": {
+      "maxLength": 100,
+      "minLength": 1,
+      "type": "string"
+    },
+    "paired_workspace_ids": {
+      "default": [],
+      "items": {
+        "format": "uuid",
+        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+        "type": "string"
+      },
+      "maxItems": 100,
+      "type": "array"
+    },
+    "remotes": {
+      "items": {
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "url": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "url"
+        ],
+        "type": "object"
+      },
+      "maxItems": 20,
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "remotes",
+    "name",
+    "device"
+  ],
+  "type": "object"
+}

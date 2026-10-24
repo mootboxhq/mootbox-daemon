@@ -1,0 +1,25 @@
+{
+  "remotes": [
+    {
+      "name": "origin",
+      "url": "git@github.com:acme/checkout.git"
+    }
+  ],
+  "name": "checkout",
+  "default_branch": "main",
+  "device": {
+    "name": "maya-laptop",
+    "os": "macOS",
+    "os_version": "15.1",
+    "daemon_version": "0.2.0",
+    "providers": [
+      {
+        "name": "claude-code",
+        "installed": true,
+        "version": "2.1.296",
+        "signed_in": true
+      }
+    ]
+  },
+  "paired_workspace_ids": ["5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2010"]
+}

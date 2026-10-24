@@ -1543,6 +1543,75 @@ impl ::std::convert::TryFrom<::std::string::String> for ErrorErrorCategory {
     }
 }
 #[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct ExchangeCliLoginRequest {
+    pub device_secret: ExchangeCliLoginRequestDeviceSecret,
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct ExchangeCliLoginRequestDeviceSecret(::std::string::String);
+impl ::std::ops::Deref for ExchangeCliLoginRequestDeviceSecret {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<ExchangeCliLoginRequestDeviceSecret> for ::std::string::String {
+    fn from(value: ExchangeCliLoginRequestDeviceSecret) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for ExchangeCliLoginRequestDeviceSecret {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 200usize {
+            return Err("longer than 200 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for ExchangeCliLoginRequestDeviceSecret {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for ExchangeCliLoginRequestDeviceSecret {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for ExchangeCliLoginRequestDeviceSecret {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(tag = "status")]
+pub enum ExchangeCliLoginResponse {
+    #[serde(rename = "pending")]
+    Pending,
+    #[serde(rename = "signed_in")]
+    SignedIn {
+        session_token: ::std::string::String,
+        user: ::std::boxed::Box<ExchangeCliLoginResponseSignedInUser>,
+    },
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct ExchangeCliLoginResponseSignedInUser {
+    pub email: ::std::string::String,
+    #[serde(deserialize_with = "::std::option::Option::deserialize")]
+    pub name: ::std::option::Option<::std::string::String>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
 pub struct ExchangePairingRequest {
     pub device_secret: ExchangePairingRequestDeviceSecret,
 }
@@ -1606,6 +1675,38 @@ pub enum ExchangePairingResponse {
         workspace_id: ::uuid::Uuid,
         workspace_name: ::std::string::String,
     },
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(tag = "status")]
+pub enum ExchangeRepositoryLinkResponse {
+    #[serde(rename = "pending")]
+    Pending,
+    #[serde(rename = "linked")]
+    Linked {
+        chat_url: ::std::string::String,
+        project: ::std::boxed::Box<ExchangeRepositoryLinkResponseLinkedProject>,
+        repository_id: ::uuid::Uuid,
+        #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+        runner: ::std::option::Option<ExchangeRepositoryLinkResponseLinkedRunner>,
+        workspace: ::std::boxed::Box<ExchangeRepositoryLinkResponseLinkedWorkspace>,
+    },
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct ExchangeRepositoryLinkResponseLinkedProject {
+    pub id: ::uuid::Uuid,
+    pub name: ::std::string::String,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct ExchangeRepositoryLinkResponseLinkedRunner {
+    pub credential: ::std::string::String,
+    pub runner_id: ::uuid::Uuid,
+    pub workspace_id: ::uuid::Uuid,
+    pub workspace_name: ::std::string::String,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct ExchangeRepositoryLinkResponseLinkedWorkspace {
+    pub id: ::uuid::Uuid,
+    pub name: ::std::string::String,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
 pub struct HealthResponse {
@@ -2098,6 +2199,66 @@ pub struct RunEventResponse {
     pub recorded: bool,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct StartCliLoginRequest {
+    pub name: StartCliLoginRequestName,
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StartCliLoginRequestName(::std::string::String);
+impl ::std::ops::Deref for StartCliLoginRequestName {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StartCliLoginRequestName> for ::std::string::String {
+    fn from(value: StartCliLoginRequestName) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StartCliLoginRequestName {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StartCliLoginRequestName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StartCliLoginRequestName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StartCliLoginRequestName {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct StartCliLoginResponse {
+    pub confirm_url: ::std::string::String,
+    pub device_secret: ::std::string::String,
+    pub expires_at: ::chrono::DateTime<::chrono::offset::Utc>,
+    pub login_id: ::uuid::Uuid,
+    pub user_code: ::std::string::String,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
 pub struct StartPairingRequest {
     pub name: StartPairingRequestName,
 }
@@ -2155,6 +2316,544 @@ pub struct StartPairingResponse {
     pub expires_at: ::chrono::DateTime<::chrono::offset::Utc>,
     pub pairing_id: ::uuid::Uuid,
     pub user_code: ::std::string::String,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct StartRepositoryLinkRequest {
+    #[serde(default = "defaults::start_repository_link_request_default_branch")]
+    pub default_branch: StartRepositoryLinkRequestDefaultBranch,
+    pub device: StartRepositoryLinkRequestDevice,
+    pub name: StartRepositoryLinkRequestName,
+    #[serde(default, skip_serializing_if = "::std::vec::Vec::is_empty")]
+    pub paired_workspace_ids: ::std::vec::Vec<::uuid::Uuid>,
+    pub remotes: ::std::vec::Vec<StartRepositoryLinkRequestRemotesItem>,
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StartRepositoryLinkRequestDefaultBranch(::std::string::String);
+impl ::std::ops::Deref for StartRepositoryLinkRequestDefaultBranch {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StartRepositoryLinkRequestDefaultBranch> for ::std::string::String {
+    fn from(value: StartRepositoryLinkRequestDefaultBranch) -> Self {
+        value.0
+    }
+}
+impl ::std::default::Default for StartRepositoryLinkRequestDefaultBranch {
+    fn default() -> Self {
+        StartRepositoryLinkRequestDefaultBranch("main".to_string())
+    }
+}
+impl ::std::str::FromStr for StartRepositoryLinkRequestDefaultBranch {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 200usize {
+            return Err("longer than 200 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StartRepositoryLinkRequestDefaultBranch {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StartRepositoryLinkRequestDefaultBranch {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StartRepositoryLinkRequestDefaultBranch {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct StartRepositoryLinkRequestDevice {
+    pub daemon_version: StartRepositoryLinkRequestDeviceDaemonVersion,
+    pub name: StartRepositoryLinkRequestDeviceName,
+    pub os: StartRepositoryLinkRequestDeviceOs,
+    #[serde(deserialize_with = "::std::option::Option::deserialize")]
+    pub os_version: ::std::option::Option<StartRepositoryLinkRequestDeviceOsVersion>,
+    pub providers: ::std::vec::Vec<StartRepositoryLinkRequestDeviceProvidersItem>,
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StartRepositoryLinkRequestDeviceDaemonVersion(::std::string::String);
+impl ::std::ops::Deref for StartRepositoryLinkRequestDeviceDaemonVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StartRepositoryLinkRequestDeviceDaemonVersion> for ::std::string::String {
+    fn from(value: StartRepositoryLinkRequestDeviceDaemonVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StartRepositoryLinkRequestDeviceDaemonVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StartRepositoryLinkRequestDeviceDaemonVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StartRepositoryLinkRequestDeviceDaemonVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StartRepositoryLinkRequestDeviceDaemonVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StartRepositoryLinkRequestDeviceName(::std::string::String);
+impl ::std::ops::Deref for StartRepositoryLinkRequestDeviceName {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StartRepositoryLinkRequestDeviceName> for ::std::string::String {
+    fn from(value: StartRepositoryLinkRequestDeviceName) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StartRepositoryLinkRequestDeviceName {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StartRepositoryLinkRequestDeviceName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StartRepositoryLinkRequestDeviceName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StartRepositoryLinkRequestDeviceName {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum StartRepositoryLinkRequestDeviceOs {
+    #[serde(rename = "macOS")]
+    MacOs,
+    Linux,
+    Windows,
+    #[serde(rename = "other")]
+    Other,
+}
+impl ::std::fmt::Display for StartRepositoryLinkRequestDeviceOs {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::MacOs => f.write_str("macOS"),
+            Self::Linux => f.write_str("Linux"),
+            Self::Windows => f.write_str("Windows"),
+            Self::Other => f.write_str("other"),
+        }
+    }
+}
+impl ::std::str::FromStr for StartRepositoryLinkRequestDeviceOs {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "macOS" => Ok(Self::MacOs),
+            "Linux" => Ok(Self::Linux),
+            "Windows" => Ok(Self::Windows),
+            "other" => Ok(Self::Other),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for StartRepositoryLinkRequestDeviceOs {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StartRepositoryLinkRequestDeviceOs {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StartRepositoryLinkRequestDeviceOsVersion(::std::string::String);
+impl ::std::ops::Deref for StartRepositoryLinkRequestDeviceOsVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StartRepositoryLinkRequestDeviceOsVersion> for ::std::string::String {
+    fn from(value: StartRepositoryLinkRequestDeviceOsVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StartRepositoryLinkRequestDeviceOsVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StartRepositoryLinkRequestDeviceOsVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StartRepositoryLinkRequestDeviceOsVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StartRepositoryLinkRequestDeviceOsVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct StartRepositoryLinkRequestDeviceProvidersItem {
+    pub installed: bool,
+    pub name: StartRepositoryLinkRequestDeviceProvidersItemName,
+    #[serde(deserialize_with = "::std::option::Option::deserialize")]
+    pub signed_in: ::std::option::Option<bool>,
+    #[serde(deserialize_with = "::std::option::Option::deserialize")]
+    pub version: ::std::option::Option<StartRepositoryLinkRequestDeviceProvidersItemVersion>,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum StartRepositoryLinkRequestDeviceProvidersItemName {
+    #[serde(rename = "claude-code")]
+    ClaudeCode,
+    #[serde(rename = "codex")]
+    Codex,
+}
+impl ::std::fmt::Display for StartRepositoryLinkRequestDeviceProvidersItemName {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        match *self {
+            Self::ClaudeCode => f.write_str("claude-code"),
+            Self::Codex => f.write_str("codex"),
+        }
+    }
+}
+impl ::std::str::FromStr for StartRepositoryLinkRequestDeviceProvidersItemName {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        match value {
+            "claude-code" => Ok(Self::ClaudeCode),
+            "codex" => Ok(Self::Codex),
+            _ => Err("invalid value".into()),
+        }
+    }
+}
+impl ::std::convert::TryFrom<&str> for StartRepositoryLinkRequestDeviceProvidersItemName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StartRepositoryLinkRequestDeviceProvidersItemName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StartRepositoryLinkRequestDeviceProvidersItemVersion(::std::string::String);
+impl ::std::ops::Deref for StartRepositoryLinkRequestDeviceProvidersItemVersion {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StartRepositoryLinkRequestDeviceProvidersItemVersion> for ::std::string::String {
+    fn from(value: StartRepositoryLinkRequestDeviceProvidersItemVersion) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StartRepositoryLinkRequestDeviceProvidersItemVersion {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StartRepositoryLinkRequestDeviceProvidersItemVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StartRepositoryLinkRequestDeviceProvidersItemVersion {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StartRepositoryLinkRequestDeviceProvidersItemVersion {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StartRepositoryLinkRequestName(::std::string::String);
+impl ::std::ops::Deref for StartRepositoryLinkRequestName {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StartRepositoryLinkRequestName> for ::std::string::String {
+    fn from(value: StartRepositoryLinkRequestName) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StartRepositoryLinkRequestName {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StartRepositoryLinkRequestName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StartRepositoryLinkRequestName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StartRepositoryLinkRequestName {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct StartRepositoryLinkRequestRemotesItem {
+    pub name: StartRepositoryLinkRequestRemotesItemName,
+    pub url: StartRepositoryLinkRequestRemotesItemUrl,
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StartRepositoryLinkRequestRemotesItemName(::std::string::String);
+impl ::std::ops::Deref for StartRepositoryLinkRequestRemotesItemName {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StartRepositoryLinkRequestRemotesItemName> for ::std::string::String {
+    fn from(value: StartRepositoryLinkRequestRemotesItemName) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StartRepositoryLinkRequestRemotesItemName {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 100usize {
+            return Err("longer than 100 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StartRepositoryLinkRequestRemotesItemName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StartRepositoryLinkRequestRemotesItemName {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StartRepositoryLinkRequestRemotesItemName {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Serialize, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[serde(transparent)]
+pub struct StartRepositoryLinkRequestRemotesItemUrl(::std::string::String);
+impl ::std::ops::Deref for StartRepositoryLinkRequestRemotesItemUrl {
+    type Target = ::std::string::String;
+    fn deref(&self) -> &::std::string::String {
+        &self.0
+    }
+}
+impl ::std::convert::From<StartRepositoryLinkRequestRemotesItemUrl> for ::std::string::String {
+    fn from(value: StartRepositoryLinkRequestRemotesItemUrl) -> Self {
+        value.0
+    }
+}
+impl ::std::str::FromStr for StartRepositoryLinkRequestRemotesItemUrl {
+    type Err = self::error::ConversionError;
+    fn from_str(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        if value.chars().count() > 500usize {
+            return Err("longer than 500 characters".into());
+        }
+        if value.chars().count() < 1usize {
+            return Err("shorter than 1 characters".into());
+        }
+        Ok(Self(value.to_string()))
+    }
+}
+impl ::std::convert::TryFrom<&str> for StartRepositoryLinkRequestRemotesItemUrl {
+    type Error = self::error::ConversionError;
+    fn try_from(value: &str) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl ::std::convert::TryFrom<::std::string::String> for StartRepositoryLinkRequestRemotesItemUrl {
+    type Error = self::error::ConversionError;
+    fn try_from(value: ::std::string::String) -> ::std::result::Result<Self, self::error::ConversionError> {
+        value.parse()
+    }
+}
+impl<'de> ::serde::Deserialize<'de> for StartRepositoryLinkRequestRemotesItemUrl {
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    where
+        D: ::serde::Deserializer<'de>,
+    {
+        ::std::string::String::deserialize(deserializer)?
+            .parse()
+            .map_err(|e: self::error::ConversionError| <D::Error as ::serde::de::Error>::custom(e.to_string()))
+    }
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+#[serde(tag = "status")]
+pub enum StartRepositoryLinkResponse {
+    #[serde(rename = "linked")]
+    Linked {
+        chat_url: ::std::string::String,
+        project: ::std::boxed::Box<StartRepositoryLinkResponseLinkedProject>,
+        repository_id: ::uuid::Uuid,
+        #[serde(skip_serializing_if = "::std::option::Option::is_none")]
+        runner: ::std::option::Option<StartRepositoryLinkResponseLinkedRunner>,
+        workspace: ::std::boxed::Box<StartRepositoryLinkResponseLinkedWorkspace>,
+    },
+    #[serde(rename = "choose")]
+    Choose {
+        choose_url: ::std::string::String,
+        expires_at: ::chrono::DateTime<::chrono::offset::Utc>,
+        link_id: ::uuid::Uuid,
+    },
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct StartRepositoryLinkResponseLinkedProject {
+    pub id: ::uuid::Uuid,
+    pub name: ::std::string::String,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct StartRepositoryLinkResponseLinkedRunner {
+    pub credential: ::std::string::String,
+    pub runner_id: ::uuid::Uuid,
+    pub workspace_id: ::uuid::Uuid,
+    pub workspace_name: ::std::string::String,
+}
+#[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
+pub struct StartRepositoryLinkResponseLinkedWorkspace {
+    pub id: ::uuid::Uuid,
+    pub name: ::std::string::String,
 }
 #[derive(::serde::Deserialize, ::serde::Serialize, Clone, Debug)]
 pub struct UpsertConnectionRequest {
@@ -2322,6 +3021,9 @@ pub mod defaults {
     }
     pub(super) fn register_repository_request_default_branch() -> super::RegisterRepositoryRequestDefaultBranch {
         super::RegisterRepositoryRequestDefaultBranch("main".to_string())
+    }
+    pub(super) fn start_repository_link_request_default_branch() -> super::StartRepositoryLinkRequestDefaultBranch {
+        super::StartRepositoryLinkRequestDefaultBranch("main".to_string())
     }
 }
 pub mod error {

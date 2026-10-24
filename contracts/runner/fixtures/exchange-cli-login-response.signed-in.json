@@ -1,0 +1,8 @@
+{
+  "status": "signed_in",
+  "session_token": "mootbox_cli_Vt3mPq8sXc1nJd6fRb0wLk4hYg9zEa2u",
+  "user": {
+    "email": "maya@example.com",
+    "name": "Maya"
+  }
+}

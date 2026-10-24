@@ -1,0 +1,6 @@
+{
+  "error": {
+    "category": "permission_denied",
+    "message": "Mootbox CLI session is invalid or revoked; run mootbox login"
+  }
+}

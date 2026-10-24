@@ -1,0 +1,13 @@
+{
+  "status": "linked",
+  "workspace": {
+    "id": "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2010",
+    "name": "Acme"
+  },
+  "project": {
+    "id": "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2030",
+    "name": "Checkout"
+  },
+  "repository_id": "5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2031",
+  "chat_url": "https://mootbox.example/p/5d1f5c1e-7f43-4c6a-9a51-0d6a1c1b2030"
+}

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "properties": {
+        "status": {
+          "const": "pending",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "session_token": {
+          "type": "string"
+        },
+        "status": {
+          "const": "signed_in",
+          "type": "string"
+        },
+        "user": {
+          "properties": {
+            "email": {
+              "type": "string"
+            },
+            "name": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "email",
+            "name"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "status",
+        "session_token",
+        "user"
+      ],
+      "type": "object"
+    }
+  ]
+}

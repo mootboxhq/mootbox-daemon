@@ -42,7 +42,7 @@ async fn a_server_that_requires_a_newer_protocol_fails_the_protocol_check() {
     assert!(report.line("server").starts_with("ok   server: "));
     assert_eq!(
         report.line("protocol"),
-        format!("fail protocol: runner protocol 9 refused: {server_text}; run mootbox update")
+        format!("fail protocol: runner protocol 10 refused: {server_text}; run mootbox update")
     );
 }
 

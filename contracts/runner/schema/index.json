@@ -1,7 +1,7 @@
 {
   "error": "error.json",
   "protocol_header": "x-mootbox-runner-protocol",
-  "protocol_version": 9,
+  "protocol_version": 10,
   "routes": [
     {
       "method": "POST",
@@ -20,6 +20,29 @@
       "request": "claim-pairing-code-request.json",
       "response": "claim-pairing-code-response.json",
       "route": "/runner/pairings/claim-code"
+    },
+    {
+      "method": "POST",
+      "request": "start-cli-login-request.json",
+      "response": "start-cli-login-response.json",
+      "route": "/runner/logins"
+    },
+    {
+      "method": "POST",
+      "request": "exchange-cli-login-request.json",
+      "response": "exchange-cli-login-response.json",
+      "route": "/runner/logins/:loginId/exchange"
+    },
+    {
+      "method": "POST",
+      "request": "start-repository-link-request.json",
+      "response": "start-repository-link-response.json",
+      "route": "/runner/links"
+    },
+    {
+      "method": "POST",
+      "response": "exchange-repository-link-response.json",
+      "route": "/runner/links/:linkId/exchange"
     },
     {
       "method": "POST",
