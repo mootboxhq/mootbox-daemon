@@ -31,7 +31,9 @@ if (Test-Path -LiteralPath $executable) {
         $archive = Join-Path $temporary $asset
         Write-Host 'Downloading Mootbox for Windows...'
         Invoke-WebRequest -UseBasicParsing -Uri "$releaseUrl/$asset" -OutFile $archive
-        $sums = (Invoke-WebRequest -UseBasicParsing -Uri "$releaseUrl/SHA256SUMS").Content
+        $checksumFile = Join-Path $temporary 'SHA256SUMS'
+        Invoke-WebRequest -UseBasicParsing -Uri "$releaseUrl/SHA256SUMS" -OutFile $checksumFile
+        $sums = [IO.File]::ReadAllText($checksumFile)
         $expected = $null
         foreach ($line in ($sums -split "`n")) {
             $parts = $line.Trim() -split '\s+'
