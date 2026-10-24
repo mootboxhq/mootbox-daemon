@@ -10,7 +10,7 @@ use sha2::{Digest, Sha256};
 use crate::config::{DEFAULT_RELEASES_URL, RELEASES_URL_VARIABLE};
 
 pub const CHECKSUMS_ASSET: &str = "SHA256SUMS";
-pub const ARCHIVED_EXECUTABLE: &str = "mootbox";
+pub const ARCHIVED_EXECUTABLE: &str = crate::platform::EXECUTABLE_NAME;
 
 const LATEST_TAG_MARKER: &str = "/releases/tag/v";
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(30);
@@ -127,14 +127,16 @@ fn asset_for(os: &str, arch: &str) -> Result<String> {
     let system = match os {
         "macos" => "macos",
         "linux" => "linux",
-        other => bail!("mootbox releases are built for macOS and Linux only, not {other}"),
+        "windows" => "windows",
+        other => bail!("mootbox releases are built for macOS, Linux, and Windows only, not {other}"),
     };
     let architecture = match arch {
         "aarch64" => "arm64",
         "x86_64" => "x64",
         other => bail!("mootbox releases are built for x86_64 and aarch64 only, not {other}"),
     };
-    Ok(format!("mootbox-{system}-{architecture}{ARCHIVE_EXTENSION}"))
+    let extension = if os == "windows" { ".zip" } else { ARCHIVE_EXTENSION };
+    Ok(format!("mootbox-{system}-{architecture}{extension}"))
 }
 
 pub fn verify_checksum(checksums: &str, asset: &str, contents: &[u8]) -> Result<()> {
@@ -209,11 +211,12 @@ mod tests {
         assert_eq!(asset("macos", "x86_64"), "mootbox-macos-x64.tar.gz");
         assert_eq!(asset("linux", "x86_64"), "mootbox-linux-x64.tar.gz");
         assert_eq!(asset("linux", "aarch64"), "mootbox-linux-arm64.tar.gz");
+        assert_eq!(asset("windows", "x86_64"), "mootbox-windows-x64.zip");
     }
 
     #[test]
     fn unreleased_platforms_are_refused() {
-        assert!(asset_for("windows", "x86_64").is_err());
+        assert!(asset_for("freebsd", "x86_64").is_err());
         assert!(asset_for("linux", "riscv64").is_err());
     }
 
@@ -222,9 +225,17 @@ mod tests {
         let asset = host_asset().expect("supported host");
 
         assert!(
-            asset.starts_with("mootbox-macos-") || asset.starts_with("mootbox-linux-"),
+            asset.starts_with("mootbox-macos-")
+                || asset.starts_with("mootbox-linux-")
+                || asset.starts_with("mootbox-windows-"),
             "{asset}"
         );
-        assert!(asset.ends_with(".tar.gz"), "{asset}");
+        assert!(
+            asset.ends_with(".tar.gz")
+                || std::path::Path::new(&asset)
+                    .extension()
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("zip")),
+            "{asset}"
+        );
     }
 }

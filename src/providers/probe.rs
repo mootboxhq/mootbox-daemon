@@ -92,7 +92,10 @@ async fn installed_version(program: &Path) -> Option<Version> {
 }
 
 async fn run_probe(program: &Path, arguments: &[&str]) -> Option<Output> {
-    let probe = Command::new(program).args(arguments).kill_on_drop(true).output();
+    let probe = Command::new(crate::platform::provider_program(program))
+        .args(arguments)
+        .kill_on_drop(true)
+        .output();
     tokio::time::timeout(PROBE_TIMEOUT, probe).await.ok()?.ok()
 }
 
@@ -138,6 +141,7 @@ mod tests {
         }
     }
 
+    #[cfg(unix)]
     #[tokio::test]
     async fn an_installed_program_reports_the_version_it_prints() {
         let directory = tempfile::tempdir().expect("temp dir");
@@ -151,6 +155,7 @@ mod tests {
         );
     }
 
+    #[cfg(unix)]
     #[tokio::test]
     async fn an_installed_program_without_a_readable_version_is_still_installed() {
         let directory = tempfile::tempdir().expect("temp dir");

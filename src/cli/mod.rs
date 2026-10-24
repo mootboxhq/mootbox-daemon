@@ -245,7 +245,7 @@ fn prompted_pairing_code() -> Result<Option<String>> {
 }
 
 fn default_device_name() -> String {
-    nix::unistd::gethostname()
+    hostname::get()
         .ok()
         .and_then(|hostname| hostname.into_string().ok())
         .filter(|hostname| !hostname.is_empty())

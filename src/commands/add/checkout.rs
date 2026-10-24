@@ -1,5 +1,4 @@
 use std::collections::BTreeSet;
-use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, anyhow, bail};
@@ -90,7 +89,7 @@ pub fn accepted<'a, T: TryFrom<&'a str, Error = ConversionError>>(field: &str, v
 }
 
 pub fn local_key(root: &Path) -> String {
-    Sha256::digest(root.as_os_str().as_bytes())
+    Sha256::digest(root.as_os_str().as_encoded_bytes())
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect::<Vec<_>>()

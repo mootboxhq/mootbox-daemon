@@ -1,6 +1,6 @@
 [package]
 name = "mootbox-daemon"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 
 [[bin]]
@@ -9,11 +9,12 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.104"
+base64 = "0.22"
+hostname = "0.4"
 chrono = { version = "0.4.45", default-features = false, features = ["clock", "serde", "std"] }
 clap = { version = "4.6.7", features = ["derive"] }
 directories = "6.0.0"
 fastrand = "2.5.0"
-nix = { version = "0.31.3", default-features = false, features = ["hostname", "process", "signal", "user"] }
 regress = "0.12.0"
 reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "json", "http2"] }
 serde = { version = "1.0.229", features = ["derive"] }
@@ -27,6 +28,13 @@ toml = "1.1.8"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["json"] }
 uuid = { version = "1.28.0", features = ["serde", "v4"] }
+
+[target.'cfg(unix)'.dependencies]
+nix = { version = "0.31.3", default-features = false, features = ["hostname", "process", "signal", "user"] }
+
+[target.'cfg(windows)'.dependencies]
+process-wrap = { version = "9.0.1", default-features = false, features = ["tokio1", "job-object", "kill-on-drop"] }
+self-replace = "1.5"
 
 [dev-dependencies]
 wiremock = "0.6.5"

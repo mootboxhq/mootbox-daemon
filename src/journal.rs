@@ -125,6 +125,7 @@ fn move_aside(path: &Path) -> Result<PathBuf> {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(unix)]
     use std::os::unix::fs::PermissionsExt;
     use std::sync::Arc;
 
@@ -199,11 +200,14 @@ mod tests {
 
         journal.record(entry_for(Uuid::new_v4())).await.expect("records");
 
-        let mode = fs::metadata(home.path().join(JOURNAL_FILE))
-            .expect("journal")
-            .permissions()
-            .mode();
-        assert_eq!(mode & 0o777, 0o600);
+        #[cfg(unix)]
+        {
+            let mode = fs::metadata(home.path().join(JOURNAL_FILE))
+                .expect("journal")
+                .permissions()
+                .mode();
+            assert_eq!(mode & 0o777, 0o600);
+        }
         assert_eq!(files_in(home.path()), [JOURNAL_FILE]);
     }
 

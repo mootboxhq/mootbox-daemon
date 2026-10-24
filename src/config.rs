@@ -175,13 +175,16 @@ pub fn save(home: &Path, config: &DaemonConfig) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(unix)]
     use std::os::unix::fs::PermissionsExt;
 
     use super::*;
+    #[cfg(unix)]
     use crate::private_files::{OWNER_ONLY_DIRECTORY, OWNER_ONLY_FILE};
 
     const MOOTBOX_URL: &str = "http://localhost:3000/";
 
+    #[cfg(unix)]
     fn mode_of(path: &Path) -> u32 {
         fs::metadata(path).expect("path exists").permissions().mode() & 0o777
     }
@@ -313,6 +316,7 @@ mod tests {
         assert_eq!(config.workspaces, [local, hosted]);
     }
 
+    #[cfg(unix)]
     #[test]
     fn saved_config_is_owner_only_inside_an_owner_only_home() {
         let parent = tempfile::tempdir().expect("temp dir");

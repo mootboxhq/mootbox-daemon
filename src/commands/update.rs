@@ -1,5 +1,8 @@
-use std::fs::{self, Permissions};
+use std::fs;
+#[cfg(unix)]
+use std::fs::Permissions;
 use std::io::Write;
+#[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -13,6 +16,7 @@ use crate::release::{self, ARCHIVED_EXECUTABLE, CHECKSUMS_ASSET, ReleaseSource, 
 use crate::service::ServiceHost;
 
 const STAGED_PREFIX: &str = ".mootbox-update-";
+#[cfg(unix)]
 const EXECUTABLE_MODE: u32 = 0o755;
 const VERSION_FLAG: &str = "--version";
 const TAR_PROGRAM: &str = "tar";
@@ -111,7 +115,7 @@ fn unpack_executable(directory: &Path, asset: &str, archive: &[u8]) -> Result<Ve
 
 fn extract_executable(archive_path: &Path, destination: &Path, asset: &str) -> Result<()> {
     let ran = Command::new(TAR_PROGRAM)
-        .arg("-xzf")
+        .arg("-xf")
         .arg(archive_path)
         .arg("-C")
         .arg(destination)
@@ -138,25 +142,32 @@ fn read_extracted_executable(extracted: &Path, asset: &str) -> Result<Vec<u8>> {
 fn replace_executable(executable: &Path, binary: &[u8], version: Version) -> Result<()> {
     let staged = stage(folder_of(executable)?, binary)?;
     confirm_version(&staged, version)?;
-    staged
-        .persist(executable)
-        .with_context(|| format!("cannot replace {}", executable.display()))
+    #[cfg(unix)]
+    {
+        staged
+            .persist(executable)
+            .with_context(|| format!("cannot replace {}", executable.display()))
+    }
+    #[cfg(windows)]
+    {
+        self_replace::self_replace(&staged).with_context(|| format!("cannot replace {}", executable.display()))
+    }
 }
 
 fn stage(directory: &Path, binary: &[u8]) -> Result<TempPath> {
     let mut staged = tempfile::Builder::new()
         .prefix(STAGED_PREFIX)
+        .suffix(if cfg!(windows) { ".exe" } else { "" })
         .tempfile_in(directory)
         .with_context(|| format!("cannot write to {}", directory.display()))?;
     staged
         .write_all(binary)
         .and_then(|()| staged.as_file().sync_all())
-        .and_then(|()| {
-            staged
-                .as_file()
-                .set_permissions(Permissions::from_mode(EXECUTABLE_MODE))
-        })
         .with_context(|| format!("cannot write {}", staged.path().display()))?;
+    #[cfg(unix)]
+    staged
+        .as_file()
+        .set_permissions(Permissions::from_mode(EXECUTABLE_MODE))?;
     Ok(staged.into_temp_path())
 }
 

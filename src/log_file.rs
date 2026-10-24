@@ -1,5 +1,6 @@
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Write};
+#[cfg(unix)]
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
 
@@ -82,11 +83,11 @@ impl Write for RotatingFile {
 }
 
 fn open_for_append(path: &Path) -> io::Result<File> {
-    OpenOptions::new()
-        .create(true)
-        .append(true)
-        .mode(private_files::OWNER_ONLY_FILE)
-        .open(path)
+    let mut options = OpenOptions::new();
+    options.create(true).append(true);
+    #[cfg(unix)]
+    options.mode(private_files::OWNER_ONLY_FILE);
+    options.open(path)
 }
 
 fn rename_if_present(from: &Path, to: &Path) -> io::Result<()> {
@@ -98,6 +99,7 @@ fn rename_if_present(from: &Path, to: &Path) -> io::Result<()> {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(unix)]
     use std::os::unix::fs::PermissionsExt;
 
     use super::*;
@@ -157,6 +159,7 @@ mod tests {
         assert_eq!(read(&rotated_path(&path, 1)).len(), 30);
     }
 
+    #[cfg(unix)]
     #[test]
     fn the_daemon_log_is_owner_only_in_the_logs_directory() {
         let home = tempfile::tempdir().expect("temp dir");

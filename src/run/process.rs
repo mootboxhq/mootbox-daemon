@@ -1,24 +1,35 @@
 use std::collections::VecDeque;
 use std::io;
+#[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
 use std::path::Path;
 use std::process::{ExitStatus, Stdio};
 use std::time::Duration;
 
+#[cfg(unix)]
 use nix::errno::Errno;
+#[cfg(unix)]
 use nix::sys::signal::{Signal, killpg};
+#[cfg(unix)]
 use nix::unistd::Pid;
+#[cfg(windows)]
+use process_wrap::tokio::{ChildWrapper, CommandWrap, JobObject, KillOnDrop};
 use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWriteExt, BufReader};
-use tokio::process::{Child, Command};
+#[cfg(unix)]
+use tokio::process::Child;
+use tokio::process::Command;
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
+#[cfg(unix)]
 use tokio::time::Instant;
 
 use crate::providers::{ProviderKind, ProviderResult};
 
 const STDERR_TAIL_LINES: usize = 50;
+#[cfg(unix)]
 const GROUP_POLL_INTERVAL: Duration = Duration::from_millis(20);
 const OUTPUT_DRAIN_TIMEOUT: Duration = Duration::from_secs(2);
+#[cfg(unix)]
 const STOP_SIGNALS: [Signal; 2] = [Signal::SIGINT, Signal::SIGTERM];
 
 pub struct ProviderLaunch<'a> {
@@ -43,22 +54,35 @@ impl ProviderReport {
     }
 
     pub fn signal_name(&self) -> Option<&'static str> {
-        let number = self.status.signal()?;
-        Signal::try_from(number).ok().map(Signal::as_str)
+        #[cfg(unix)]
+        {
+            let number = self.status.signal()?;
+            Signal::try_from(number).ok().map(Signal::as_str)
+        }
+        #[cfg(windows)]
+        {
+            None
+        }
     }
 }
 
 pub struct RunningProvider {
     pub activity: Option<mpsc::Receiver<String>>,
+    #[cfg(unix)]
     child: Child,
+    #[cfg(unix)]
     group: Pid,
+    #[cfg(windows)]
+    child: Box<dyn ChildWrapper>,
+    #[cfg(windows)]
+    process_id: i32,
     result: JoinHandle<Option<ProviderResult>>,
     stderr_tail: JoinHandle<Vec<String>>,
 }
 
 impl RunningProvider {
     pub fn spawn(launch: ProviderLaunch<'_>) -> io::Result<Self> {
-        let mut command = Command::new(launch.program);
+        let mut command = Command::new(crate::platform::provider_program(launch.program));
         command
             .args(&launch.arguments)
             .envs(launch.environment)
@@ -66,38 +90,72 @@ impl RunningProvider {
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .process_group(0)
             .kill_on_drop(true);
+        #[cfg(unix)]
+        command.process_group(0);
+        #[cfg(windows)]
+        let mut command = {
+            let mut wrapped = CommandWrap::from(command);
+            wrapped.wrap(KillOnDrop).wrap(JobObject);
+            wrapped
+        };
         let mut child = command.spawn()?;
         let pid = child
             .id()
             .and_then(|id| i32::try_from(id).ok())
             .ok_or_else(|| io::Error::other("the provider exited before its process group could be recorded"))?;
+        #[cfg(unix)]
         let mut stdin = child.stdin.take().ok_or_else(|| unpiped("stdin"))?;
+        #[cfg(windows)]
+        let mut stdin = child.stdin().take().ok_or_else(|| unpiped("stdin"))?;
         let prompt = launch.prompt;
         tokio::spawn(async move {
             let _ = stdin.write_all(prompt.as_bytes()).await;
         });
+        #[cfg(unix)]
         let stdout = child.stdout.take().ok_or_else(|| unpiped("stdout"))?;
+        #[cfg(unix)]
         let stderr = child.stderr.take().ok_or_else(|| unpiped("stderr"))?;
+        #[cfg(windows)]
+        let stdout = child.stdout().take().ok_or_else(|| unpiped("stdout"))?;
+        #[cfg(windows)]
+        let stderr = child.stderr().take().ok_or_else(|| unpiped("stderr"))?;
         let (activity_tx, activity_rx) = mpsc::channel(256);
         Ok(Self {
             activity: Some(activity_rx),
             child,
+            #[cfg(unix)]
             group: Pid::from_raw(pid),
+            #[cfg(windows)]
+            process_id: pid,
             result: tokio::spawn(read_result(stdout, launch.provider, activity_tx)),
             stderr_tail: tokio::spawn(read_tail(stderr)),
         })
     }
 
     pub fn pid(&self) -> i32 {
-        self.group.as_raw()
+        #[cfg(unix)]
+        {
+            self.group.as_raw()
+        }
+        #[cfg(windows)]
+        {
+            self.process_id
+        }
     }
 
     pub async fn wait(&mut self) -> io::Result<ExitStatus> {
-        self.child.wait().await
+        #[cfg(unix)]
+        {
+            self.child.wait().await
+        }
+        #[cfg(windows)]
+        {
+            self.child.inner_mut().wait().await
+        }
     }
 
+    #[cfg(unix)]
     pub async fn terminate(&mut self, grace: Duration) {
         for signal in STOP_SIGNALS {
             self.signal_group(signal);
@@ -108,9 +166,17 @@ impl RunningProvider {
         self.signal_group(Signal::SIGKILL);
     }
 
+    #[cfg(windows)]
+    pub async fn terminate(&mut self, _grace: Duration) {
+        let _ = self.child.start_kill();
+    }
+
     pub async fn finish(mut self) -> io::Result<ProviderReport> {
-        let status = self.child.wait().await?;
+        let status = self.wait().await?;
+        #[cfg(unix)]
         self.signal_group(Signal::SIGKILL);
+        #[cfg(windows)]
+        let _ = self.child.start_kill();
         Ok(ProviderReport {
             status,
             result: drained(self.result).await.flatten(),
@@ -118,10 +184,12 @@ impl RunningProvider {
         })
     }
 
+    #[cfg(unix)]
     fn signal_group(&self, signal: Signal) {
         let _ = killpg(self.group, signal);
     }
 
+    #[cfg(unix)]
     async fn group_ends_within(&mut self, grace: Duration) -> bool {
         let deadline = Instant::now() + grace;
         loop {
@@ -135,6 +203,7 @@ impl RunningProvider {
         }
     }
 
+    #[cfg(unix)]
     fn has_group_ended(&mut self) -> bool {
         let has_leader_exited = matches!(self.child.try_wait(), Ok(Some(_)));
         has_leader_exited && killpg(self.group, None) == Err(Errno::ESRCH)
@@ -179,6 +248,7 @@ async fn drained<T>(reader: JoinHandle<T>) -> Option<T> {
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 mod tests {
     use super::*;
 

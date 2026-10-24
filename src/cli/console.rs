@@ -1,5 +1,7 @@
 use std::io::{BufRead, IsTerminal, Write};
-use std::process::{Command, Stdio};
+#[cfg(unix)]
+use std::process::Command;
+use std::process::Stdio;
 
 use anyhow::{Result, bail};
 use reqwest::Url;
@@ -7,6 +9,7 @@ use reqwest::Url;
 use crate::commands::Console;
 use crate::commands::add::PROJECT_HINT;
 
+#[cfg(unix)]
 const BROWSER_OPENER: &str = if cfg!(target_os = "macos") { "open" } else { "xdg-open" };
 
 pub struct TerminalConsole;
@@ -43,8 +46,19 @@ impl Console for TerminalConsole {
 
     fn open_link(&self, link: &Url) {
         eprintln!("Confirm this device in your browser: {link}");
-        let _ = Command::new(BROWSER_OPENER)
-            .arg(link.as_str())
+        #[cfg(unix)]
+        let mut opener = {
+            let mut command = Command::new(BROWSER_OPENER);
+            command.arg(link.as_str());
+            command
+        };
+        #[cfg(windows)]
+        let mut opener = {
+            let mut command = crate::platform::powershell("Start-Process -FilePath $env:MOOTBOX_CONFIRM_URL");
+            command.env("MOOTBOX_CONFIRM_URL", link.as_str());
+            command
+        };
+        let _ = opener
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())

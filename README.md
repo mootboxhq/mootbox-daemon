@@ -84,7 +84,7 @@ Commands never print: they return `commands::Output`, or talk through `commands:
 scripts/check.sh
 ```
 
-This runs formatting, the no-comments check, the generated-contracts drift check, Clippy with warnings denied, and the Rust unit, contract-fixture and integration tests.
+This runs formatting, the no-comments check, the generated-contracts drift check, Clippy with warnings denied, and the Rust unit, contract-fixture and integration tests. Windows CI runs `cargo clippy --workspace --all-targets --locked -- -D warnings` and `cargo test --workspace --locked`, including native executable, npm shim, Job Object cancellation, private ACL, Task Scheduler configuration, and self-update tests. Unix shell-fixture integration tests run on macOS and Linux.
 
 Enable the pre-commit hook (format, no-comments and Clippy checks) once per clone with `git config core.hooksPath .githooks`.
 
@@ -106,10 +106,18 @@ Each release carries one archive per platform and a `SHA256SUMS` file in `sha256
 | --- | --- | --- |
 | macOS Apple silicon | `mootbox-macos-arm64.tar.gz` | `aarch64-apple-darwin` |
 | macOS Intel | `mootbox-macos-x64.tar.gz` | `x86_64-apple-darwin` |
-| Linux x86_64 and Windows via WSL2 | `mootbox-linux-x64.tar.gz` | `x86_64-unknown-linux-musl` |
+| Linux x86_64 | `mootbox-linux-x64.tar.gz` | `x86_64-unknown-linux-musl` |
 | Linux ARM64 | `mootbox-linux-arm64.tar.gz` | `aarch64-unknown-linux-musl` |
 
-Each archive holds `mootbox` (mode `0755`) and `README.md` at its top level, so `tar -xzf mootbox-<os>-<arch>.tar.gz` yields `mootbox` directly. Asset names carry no version, so the latest ones download from `https://github.com/mootboxhq/mootbox-daemon/releases/latest/download/<asset>`.
+Native Windows x64 is distributed as `mootbox-windows-x64.zip`, containing `mootbox.exe` and `README.md`. It runs directly in Windows 10/11 with Git for Windows and your signed-in provider CLI. No WSL is required. Run inside your repository in PowerShell:
+
+```powershell
+& ([scriptblock]::Create((Invoke-RestMethod https://github.com/mootboxhq/mootbox-daemon/releases/latest/download/install.ps1)))
+```
+
+For another server or an explicit project, append `-MootboxUrl https://your-server.example -Workspace <workspace-id> -Project <project-id>`. The installer checks the archive SHA256, adds the user install directory to PATH, and runs the same `mootbox add` flow. `mootbox service install` uses a per-user Task Scheduler task at login; `mootbox service uninstall` removes it. `mootbox update` safely replaces the running Windows executable.
+
+Each Unix archive holds `mootbox` (mode `0755`) and `README.md` at its top level, so `tar -xzf mootbox-<os>-<arch>.tar.gz` yields `mootbox` directly. Asset names carry no version, so the latest ones download from `https://github.com/mootboxhq/mootbox-daemon/releases/latest/download/<asset>`.
 
 v0.1.0 shipped bare binaries named by target triple, so `mootbox update` on v0.1.0 cannot update itself to v0.1.1 or later. Reinstall it with `curl -fsSL https://mootbox.zbib.dev/install | sh`.
 

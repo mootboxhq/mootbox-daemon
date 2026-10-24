@@ -2,6 +2,7 @@ use std::path::Path;
 use std::time::Duration;
 
 use anyhow::{Context, Result, bail};
+#[cfg(unix)]
 use tokio::signal::unix::{SignalKind, signal};
 use tokio_util::sync::CancellationToken;
 use tracing::info;
@@ -128,6 +129,7 @@ fn provider_options(flags: ProviderOptions, config: &DaemonConfig) -> Result<Pro
     })
 }
 
+#[cfg(unix)]
 fn cancel_on_stop_signal(shutdown: CancellationToken) -> Result<()> {
     let mut interrupt = signal(SignalKind::interrupt()).context("cannot listen for SIGINT")?;
     let mut terminate = signal(SignalKind::terminate()).context("cannot listen for SIGTERM")?;
@@ -182,4 +184,23 @@ mod tests {
             assert!(provider_options(ProviderOptions::default(), &configured(None, Some(budget))).is_err());
         }
     }
+}
+
+#[cfg(windows)]
+fn cancel_on_stop_signal(shutdown: CancellationToken) -> Result<()> {
+    let mut interrupt = tokio::signal::windows::ctrl_c().context("cannot listen for Ctrl+C")?;
+    let mut close = tokio::signal::windows::ctrl_close().context("cannot listen for window close")?;
+    let mut logoff = tokio::signal::windows::ctrl_logoff().context("cannot listen for logoff")?;
+    let mut stop = tokio::signal::windows::ctrl_shutdown().context("cannot listen for shutdown")?;
+    tokio::spawn(async move {
+        tokio::select! {
+            _ = interrupt.recv() => {}
+            _ = close.recv() => {}
+            _ = logoff.recv() => {}
+            _ = stop.recv() => {}
+        }
+        info!("shutdown requested; finishing active runs");
+        shutdown.cancel();
+    });
+    Ok(())
 }

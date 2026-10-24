@@ -12,6 +12,7 @@ pub mod lock;
 pub mod log_file;
 pub mod logging;
 pub mod pairing;
+pub mod platform;
 pub mod private_files;
 pub mod providers;
 pub mod release;

@@ -1,4 +1,5 @@
 use std::fs::{File, OpenOptions, TryLockError};
+#[cfg(unix)]
 use std::os::unix::fs::OpenOptionsExt;
 use std::path::Path;
 
@@ -30,11 +31,11 @@ pub fn is_held(home: &Path) -> Result<bool> {
 fn try_acquire(home: &Path) -> Result<Option<DaemonLock>> {
     private_files::create_private_directory(home)?;
     let path = home.join(LOCK_FILE);
-    let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .mode(private_files::OWNER_ONLY_FILE)
+    let mut options = OpenOptions::new();
+    options.write(true).create(true).truncate(false);
+    #[cfg(unix)]
+    options.mode(private_files::OWNER_ONLY_FILE);
+    let file = options
         .open(&path)
         .with_context(|| format!("cannot open {}", path.display()))?;
     match file.try_lock() {

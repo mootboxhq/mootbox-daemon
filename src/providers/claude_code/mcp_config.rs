@@ -36,6 +36,7 @@ fn contents(mootbox_mcp_url: &Url, run_token: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(unix)]
     use std::os::unix::fs::PermissionsExt;
     use std::path::Path;
 
@@ -64,8 +65,11 @@ mod tests {
     fn the_written_config_is_readable_only_by_its_owner_and_removed_with_its_directory() {
         let (directory, path) = write(&Url::parse(URL).unwrap(), TOKEN).expect("writes");
 
-        let mode = std::fs::metadata(&path).unwrap().permissions().mode();
-        assert_eq!(mode & 0o777, 0o600);
+        #[cfg(unix)]
+        {
+            let mode = std::fs::metadata(&path).unwrap().permissions().mode();
+            assert_eq!(mode & 0o777, 0o600);
+        }
         drop(directory);
         assert!(!path.exists());
     }

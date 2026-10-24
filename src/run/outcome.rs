@@ -97,13 +97,18 @@ fn is_match(pattern: &LazyLock<Option<Regex>>, text: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(unix)]
     use std::os::unix::process::ExitStatusExt;
+    #[cfg(windows)]
+    use std::os::windows::process::ExitStatusExt;
     use std::process::ExitStatus;
 
     use super::*;
     use crate::providers::ProviderResult;
 
+    #[cfg(unix)]
     const EXIT_CODE_SHIFT: i32 = 8;
+    #[cfg(unix)]
     const SIGINT: i32 = 2;
     const FRESH: Attempt = Attempt {
         is_resumed: false,
@@ -115,7 +120,14 @@ mod tests {
     };
 
     fn exited(code: i32) -> ExitStatus {
-        ExitStatus::from_raw(code << EXIT_CODE_SHIFT)
+        #[cfg(unix)]
+        {
+            ExitStatus::from_raw(code << EXIT_CODE_SHIFT)
+        }
+        #[cfg(windows)]
+        {
+            ExitStatus::from_raw(u32::try_from(code).expect("positive exit code"))
+        }
     }
 
     fn report(status: ExitStatus, result: Option<ProviderResult>, stderr: &[&str]) -> ProviderReport {
@@ -150,6 +162,7 @@ mod tests {
             classify(&report(exited(0), Some(succeeded()), &[]), stopped),
             Some(ErrorCategory::Interrupted)
         );
+        #[cfg(unix)]
         assert_eq!(
             classify(&report(ExitStatus::from_raw(SIGINT), None, &[]), FRESH),
             Some(ErrorCategory::Interrupted)

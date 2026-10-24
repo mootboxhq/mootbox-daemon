@@ -1,5 +1,6 @@
 use std::fs::{self, DirBuilder, OpenOptions};
 use std::io::Write;
+#[cfg(unix)]
 use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
 use std::path::{Path, PathBuf};
 
@@ -11,11 +12,21 @@ pub const OWNER_ONLY_DIRECTORY: u32 = 0o700;
 const TEMPORARY_SUFFIX: &str = ".tmp";
 
 pub fn create_private_directory(path: &Path) -> Result<()> {
-    DirBuilder::new()
-        .recursive(true)
-        .mode(OWNER_ONLY_DIRECTORY)
+    let mut builder = DirBuilder::new();
+    builder.recursive(true);
+    #[cfg(unix)]
+    builder.mode(OWNER_ONLY_DIRECTORY);
+    let was_present = path.exists();
+    builder
         .create(path)
-        .with_context(|| format!("cannot create {}", path.display()))
+        .with_context(|| format!("cannot create {}", path.display()))?;
+    #[cfg(windows)]
+    if !was_present {
+        crate::platform::restrict_to_owner(path)?;
+    }
+    #[cfg(unix)]
+    let _ = was_present;
+    Ok(())
 }
 
 pub fn replace_owner_only(path: &Path, contents: &[u8]) -> Result<()> {
@@ -26,12 +37,15 @@ pub fn replace_owner_only(path: &Path, contents: &[u8]) -> Result<()> {
 
 pub fn write_owner_only(path: &Path, contents: &[u8]) -> Result<()> {
     let _ = fs::remove_file(path);
-    let mut file = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .mode(OWNER_ONLY_FILE)
+    let mut options = OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    options.mode(OWNER_ONLY_FILE);
+    let mut file = options
         .open(path)
         .with_context(|| format!("cannot create {}", path.display()))?;
+    #[cfg(windows)]
+    crate::platform::restrict_to_owner(path)?;
     file.write_all(contents)?;
     file.sync_all()?;
     Ok(())
@@ -44,6 +58,7 @@ pub fn temporary_path(path: &Path) -> PathBuf {
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 mod tests {
     use std::os::unix::fs::PermissionsExt;
 

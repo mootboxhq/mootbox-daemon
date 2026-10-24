@@ -10,6 +10,7 @@ on:
       - gen-contracts/**
       - contracts/**
       - .github/workflows/release.yml
+      - scripts/install.ps1
   workflow_dispatch:
 
 concurrency:
@@ -18,6 +19,10 @@ concurrency:
 
 permissions:
   contents: read
+
+defaults:
+  run:
+    shell: bash
 
 env:
   CARGO_TERM_COLOR: always
@@ -80,11 +85,15 @@ jobs:
           - target: aarch64-apple-darwin
             asset: mootbox-macos-arm64.tar.gz
             os: macos-14
+          - target: x86_64-pc-windows-msvc
+            asset: mootbox-windows-x64.zip
+            os: windows-2022
     runs-on: ${{ matrix.os }}
     env:
       TARGET: ${{ matrix.target }}
       ASSET: ${{ matrix.asset }}
       VERSION: ${{ needs.plan.outputs.version }}
+      EXECUTABLE: ${{ startsWith(matrix.os, 'windows-') && 'mootbox.exe' || 'mootbox' }}
     steps:
       - uses: actions/checkout@v4
       - name: Install musl tools
@@ -100,17 +109,23 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
+      - name: Native Windows checks
+        if: runner.os == 'Windows'
+        run: |
+          cargo clippy --workspace --all-targets --locked -- -D warnings
+          cargo test --workspace --locked
       - name: Build
         run: cargo build --release --locked --target "$TARGET"
       - name: Smoke-run the binary
         run: |
-          printed="$("target/$TARGET/release/mootbox" --version)"
+          printed="$("target/$TARGET/release/$EXECUTABLE" --version | tr -d '\r')"
           if [ "$printed" != "mootbox $VERSION" ]; then
             echo "::error::the $TARGET build printed '$printed', expected 'mootbox $VERSION'"
             exit 1
           fi
           echo "$printed"
       - name: Package the archive
+        if: runner.os != 'Windows'
         run: |
           rm -rf staging
           mkdir staging
@@ -120,6 +135,14 @@ jobs:
           chmod 0644 staging/README.md
           COPYFILE_DISABLE=1 tar -czf "$ASSET" -C staging mootbox README.md
           tar -tzvf "$ASSET"
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory staging | Out-Null
+          Copy-Item "target/$env:TARGET/release/mootbox.exe" staging/mootbox.exe
+          Copy-Item README.md staging/README.md
+          Compress-Archive -Path staging/* -DestinationPath $env:ASSET
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.asset }}
@@ -134,13 +157,15 @@ jobs:
     env:
       TAG: v${{ needs.plan.outputs.version }}
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          pattern: mootbox-*.tar.gz
+          pattern: mootbox-*
           merge-multiple: true
       - name: Write SHA256SUMS
         run: |
-          sha256sum mootbox-*.tar.gz > SHA256SUMS
+          cp scripts/install.ps1 install.ps1
+          sha256sum mootbox-*.tar.gz mootbox-*.zip install.ps1 > SHA256SUMS
           cat SHA256SUMS
       - name: Write the release notes
         run: |
@@ -154,6 +179,14 @@ jobs:
           curl -fsSL https://mootbox.zbib.dev/install | sh
           ```
 
+          Native Windows 10/11 (PowerShell, inside your repository):
+
+          ```powershell
+          & ([scriptblock]::Create((Invoke-RestMethod https://github.com/mootboxhq/mootbox-daemon/releases/latest/download/install.ps1)))
+          ```
+
+          This installs `mootbox.exe` for your Windows account and starts the browser confirmation flow. No WSL or administrator terminal is needed. Git for Windows and your signed-in provider CLI are required.
+
           Already installed? Update in place:
 
           ```sh
@@ -166,10 +199,12 @@ jobs:
           | --- | --- |
           | macOS Apple silicon | `mootbox-macos-arm64.tar.gz` |
           | macOS Intel | `mootbox-macos-x64.tar.gz` |
-          | Linux x86_64 and Windows via WSL2 | `mootbox-linux-x64.tar.gz` |
+          | Linux x86_64 | `mootbox-linux-x64.tar.gz` |
           | Linux ARM64 | `mootbox-linux-arm64.tar.gz` |
 
-          Each archive holds the `mootbox` executable and `README.md`.
+          | Native Windows x64 | `mootbox-windows-x64.zip` |
+
+          Archives hold `mootbox` (`mootbox.exe` on Windows) and `README.md`.
 
           ## Verify
 
@@ -197,4 +232,4 @@ jobs:
             --title "mootbox $TAG" \
             --notes-file notes.md \
             --generate-notes \
-            mootbox-*.tar.gz SHA256SUMS
+            mootbox-*.tar.gz mootbox-*.zip install.ps1 SHA256SUMS
