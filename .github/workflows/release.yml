@@ -1,0 +1,141 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Cargo.toml
+      - Cargo.lock
+      - src/**
+      - gen-contracts/**
+      - contracts/**
+      - .github/workflows/release.yml
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      should_release: ${{ steps.existing.outputs.should_release }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the pinned toolchain
+        run: rustup toolchain install --profile minimal
+      - name: Read the package version
+        id: version
+        run: |
+          version="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "mootbox-daemon") | .version')"
+          if [ -z "$version" ] || [ "$version" = "null" ]; then
+            echo "::error::cannot read the mootbox-daemon version from Cargo.toml"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Check for an existing release
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.version.outputs.version }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2> lookup.err; then
+            echo "$TAG is already released; nothing to publish"
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if grep -q "release not found" lookup.err; then
+            echo "$TAG is new; releasing"
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          cat lookup.err >&2
+          echo "::error::cannot check whether $TAG is already released"
+          exit 1
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.should_release == 'true'
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-24.04
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-24.04-arm
+          - target: x86_64-apple-darwin
+            os: macos-14
+          - target: aarch64-apple-darwin
+            os: macos-14
+    runs-on: ${{ matrix.os }}
+    env:
+      TARGET: ${{ matrix.target }}
+      VERSION: ${{ needs.plan.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install musl tools
+        if: endsWith(matrix.target, '-linux-musl')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+          echo "CC_${TARGET//-/_}=musl-gcc" >> "$GITHUB_ENV"
+      - name: Install the pinned toolchain and target
+        run: |
+          rustup toolchain install --profile minimal
+          rustup target add "$TARGET"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - name: Build
+        run: cargo build --release --locked --target "$TARGET"
+      - name: Name the asset
+        run: cp "target/$TARGET/release/mootbox" "mootbox-$TARGET"
+      - name: Smoke-run the asset
+        run: |
+          printed="$("./mootbox-$TARGET" --version)"
+          if [ "$printed" != "mootbox $VERSION" ]; then
+            echo "::error::mootbox-$TARGET printed '$printed', expected 'mootbox $VERSION'"
+            exit 1
+          fi
+          echo "$printed"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mootbox-${{ matrix.target }}
+          path: mootbox-${{ matrix.target }}
+          if-no-files-found: error
+
+  publish:
+    needs: [plan, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      TAG: v${{ needs.plan.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: mootbox-*
+          merge-multiple: true
+      - name: Write SHA256SUMS
+        run: |
+          sha256sum mootbox-* > SHA256SUMS
+          cat SHA256SUMS
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "mootbox $TAG" \
+            --notes "mootbox $TAG built from $GITHUB_REPOSITORY@$GITHUB_SHA." \
+            mootbox-* SHA256SUMS
