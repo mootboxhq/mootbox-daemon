@@ -163,7 +163,11 @@ async fn update_verifies_a_zip_and_replaces_a_running_native_executable() {
     assert!(platform::powershell("$ErrorActionPreference = 'Stop'; Compress-Archive -LiteralPath $env:MOOTBOX_TEST_EXE -DestinationPath $env:MOOTBOX_TEST_ARCHIVE")
         .env("MOOTBOX_TEST_EXE", &replacement).env("MOOTBOX_TEST_ARCHIVE", &archive).status().expect("creates zip").success());
     let bytes = fs::read(&archive).expect("zip");
-    let sums = format!("{:x}  mootbox-windows-x64.zip\n", Sha256::digest(&bytes));
+    let digest: String = Sha256::digest(&bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect();
+    let sums = format!("{digest}  mootbox-windows-x64.zip\n");
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/releases/latest"))

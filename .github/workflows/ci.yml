@@ -24,6 +24,8 @@ jobs:
       - name: Install the pinned toolchain
         run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
       - name: Formatting
         run: cargo fmt --all -- --check
       - name: No comments
@@ -44,6 +46,8 @@ jobs:
       - name: Install the pinned toolchain
         run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
       - name: Windows Clippy
         if: runner.os == 'Windows'
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
