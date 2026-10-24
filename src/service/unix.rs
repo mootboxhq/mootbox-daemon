@@ -2,6 +2,7 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::time::Duration;
 
 use anyhow::{Context, Result, bail};
 
@@ -25,6 +26,9 @@ const LAUNCHCTL: &str = "launchctl";
 const SYSTEMCTL: &str = "systemctl";
 const SYSTEMD_USER_FLAG: &str = "--user";
 const LAUNCHD_RUNNING_STATE: &str = "state = running";
+const LAUNCHD_TEARDOWN_REFUSAL: &str = "Input/output error";
+const BOOTSTRAP_ATTEMPTS: u32 = 10;
+const BOOTSTRAP_RETRY_DELAY: Duration = Duration::from_millis(500);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ServiceKind {
@@ -194,13 +198,27 @@ impl ServiceHost {
         match self.kind {
             ServiceKind::Launchd => {
                 let _ = self.unload();
-                let path = self.file_path().display().to_string();
-                self.manage(&["bootstrap", &self.launchd_domain(), &path]).map(drop)
+                self.bootstrap()
             }
             ServiceKind::Systemd => {
                 self.manage(&[SYSTEMD_USER_FLAG, "daemon-reload"])?;
                 self.manage(&[SYSTEMD_USER_FLAG, "enable", SYSTEMD_UNIT])?;
                 self.manage(&[SYSTEMD_USER_FLAG, "restart", SYSTEMD_UNIT]).map(drop)
+            }
+        }
+    }
+
+    fn bootstrap(&self) -> Result<()> {
+        let domain = self.launchd_domain();
+        let path = self.file_path().display().to_string();
+        let mut attempt = 1;
+        loop {
+            match self.manage(&["bootstrap", &domain, &path]) {
+                Err(error) if attempt < BOOTSTRAP_ATTEMPTS && is_launchd_tearing_down(&error) => {
+                    std::thread::sleep(BOOTSTRAP_RETRY_DELAY);
+                    attempt += 1;
+                }
+                bootstrapped => return bootstrapped.map(drop),
             }
         }
     }
@@ -235,6 +253,10 @@ impl ServiceHost {
         }
         Ok(String::from_utf8_lossy(&output.stdout).into_owned())
     }
+}
+
+fn is_launchd_tearing_down(error: &anyhow::Error) -> bool {
+    format!("{error:#}").contains(LAUNCHD_TEARDOWN_REFUSAL)
 }
 
 pub fn stable_executable(current: &Path, search_path: &str) -> PathBuf {

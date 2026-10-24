@@ -29,6 +29,10 @@ impl FakeManager {
         Self(FakeServiceManager::printing(output))
     }
 
+    fn busy_once_on(command: &str) -> Self {
+        Self(FakeServiceManager::busy_once_on(command))
+    }
+
     fn calls(&self) -> Vec<String> {
         self.0.calls()
     }
@@ -162,6 +166,26 @@ fn a_refused_bootstrap_keeps_the_written_plist_and_reports_the_reason() {
     assert_eq!(
         host.manual_load_command(),
         format!("launchctl bootstrap gui/501 {}", host.file_path().display())
+    );
+}
+
+#[test]
+fn a_bootstrap_refused_while_launchd_tears_down_the_old_job_is_retried() {
+    let (home, _) = paired_home("http://localhost:3000");
+    let agents = tempfile::tempdir().expect("temp dir");
+    let manager = FakeManager::busy_once_on("bootstrap");
+    let host = manager.host(ServiceKind::Launchd, agents.path());
+
+    service_command::reload(home.path(), &host, environment()).expect("restarts after the retry");
+
+    let bootstrap = format!("bootstrap gui/501 {}", host.file_path().display());
+    assert_eq!(
+        manager.calls(),
+        [
+            "bootout gui/501/dev.mootbox.daemon".to_string(),
+            bootstrap.clone(),
+            bootstrap,
+        ]
     );
 }
 

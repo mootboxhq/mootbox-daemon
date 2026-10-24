@@ -20,6 +20,7 @@ const FAKE_SERVICE_MANAGER: &str = "tests/fixtures/fake-service-manager.sh";
 const CALLS_FILE: &str = "calls";
 const OUTPUT_FILE: &str = "output";
 const FAILING_FILE: &str = "failing";
+const BUSY_ONCE_FILE: &str = "busy-once";
 const STOPPED_FILE: &str = "stopped";
 
 pub fn fixture(name: &str) -> Value {
@@ -140,6 +141,12 @@ impl FakeServiceManager {
     pub fn failing_on(command: &str) -> Self {
         let manager = Self::printing("");
         manager.write(FAILING_FILE, command);
+        manager
+    }
+
+    pub fn busy_once_on(command: &str) -> Self {
+        let manager = Self::printing("");
+        manager.write(BUSY_ONCE_FILE, command);
         manager
     }
 
