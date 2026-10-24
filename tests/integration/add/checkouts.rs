@@ -114,6 +114,7 @@ async fn without_a_mootbox_url_or_a_paired_server_asks_for_the_url() {
     let home = tempfile::tempdir().expect("temp dir");
     let repository = checkout_repository("checkout", ORIGIN);
     let options = AddOptions {
+        workspace: None,
         mootbox_url: None,
         project: None,
         new_workspace: false,

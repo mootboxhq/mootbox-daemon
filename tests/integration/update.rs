@@ -18,6 +18,32 @@ const HTTP_FOUND: u16 = 302;
 const REFUSING_MANAGER: &str = "false";
 const SERVICE_FOLDER: &str = "services";
 const EXECUTABLE_NAME: &str = "mootbox";
+const README_NAME: &str = "README.md";
+
+struct Release {
+    binary: Vec<u8>,
+    archive: Vec<u8>,
+}
+
+impl Release {
+    fn printing(version: &str) -> Self {
+        let binary = fake_binary(version);
+        let archive = archive_of(&[(EXECUTABLE_NAME, &binary), (README_NAME, b"mootbox\n")]);
+        Self { binary, archive }
+    }
+
+    fn without_executable() -> Self {
+        let archive = archive_of(&[(README_NAME, b"mootbox\n")]);
+        Self {
+            binary: Vec::new(),
+            archive,
+        }
+    }
+
+    fn digest(&self) -> String {
+        sha256_hex(&self.archive)
+    }
+}
 
 struct Installed {
     folder: TempDir,
@@ -68,6 +94,26 @@ fn fake_binary(prints: &str) -> Vec<u8> {
     format!("#!/bin/sh\necho 'mootbox {prints}'\n").into_bytes()
 }
 
+fn archive_of(members: &[(&str, &[u8])]) -> Vec<u8> {
+    let staging = tempfile::tempdir().expect("temp dir");
+    for (name, contents) in members {
+        let member = staging.path().join(name);
+        fs::write(&member, contents).expect("writes the member");
+        fs::set_permissions(&member, fs::Permissions::from_mode(0o755)).expect("marks the member executable");
+    }
+    let archive = staging.path().join("release.tar.gz");
+    let status = Command::new("tar")
+        .arg("-czf")
+        .arg(&archive)
+        .arg("-C")
+        .arg(staging.path())
+        .args(members.iter().map(|(name, _)| name))
+        .status()
+        .expect("tar runs");
+    assert!(status.success(), "tar failed: {status}");
+    fs::read(&archive).expect("reads the archive")
+}
+
 fn sha256_hex(contents: &[u8]) -> String {
     Sha256::digest(contents)
         .iter()
@@ -95,12 +141,12 @@ async fn serve_asset(server: &MockServer, version: &str, asset: &str, contents: 
         .await;
 }
 
-async fn serve_release(server: &MockServer, binary: &[u8], listed_digest: &str) {
+async fn serve_release(server: &MockServer, release: &Release, listed_digest: &str) {
     let asset = release::host_asset().expect("supported host");
     serve_latest(server, NEWER_VERSION).await;
     let checksums = format!("{}  mootbox-other\n{listed_digest}  {asset}\n", "0".repeat(64));
     serve_asset(server, NEWER_VERSION, "SHA256SUMS", checksums.into_bytes()).await;
-    serve_asset(server, NEWER_VERSION, &asset, binary.to_vec()).await;
+    serve_asset(server, NEWER_VERSION, &asset, release.archive.clone()).await;
 }
 
 fn stdout_of(output: &Output) -> String {
@@ -131,8 +177,8 @@ async fn update_reports_up_to_date_when_the_latest_release_is_this_version() {
 #[tokio::test]
 async fn update_replaces_the_running_executable_with_the_verified_release() {
     let server = MockServer::start().await;
-    let binary = fake_binary(NEWER_VERSION);
-    serve_release(&server, &binary, &sha256_hex(&binary)).await;
+    let release = Release::printing(NEWER_VERSION);
+    serve_release(&server, &release, &release.digest()).await;
     let home = tempfile::tempdir().expect("temp dir");
     let installed = Installed::copy_of_this_build();
 
@@ -143,7 +189,7 @@ async fn update_replaces_the_running_executable_with_the_verified_release() {
         stdout_of(&output),
         format!("updated mootbox {} → {NEWER_VERSION}\n", env!("CARGO_PKG_VERSION"))
     );
-    assert_eq!(installed.contents(), binary);
+    assert_eq!(installed.contents(), release.binary);
     assert_eq!(installed.entries(), [EXECUTABLE_NAME]);
     let mode = fs::metadata(installed.executable())
         .expect("metadata")
@@ -155,8 +201,8 @@ async fn update_replaces_the_running_executable_with_the_verified_release() {
 #[tokio::test]
 async fn update_refuses_a_release_whose_checksum_does_not_match() {
     let server = MockServer::start().await;
-    let binary = fake_binary(NEWER_VERSION);
-    serve_release(&server, &binary, &"f".repeat(64)).await;
+    let release = Release::printing(NEWER_VERSION);
+    serve_release(&server, &release, &"f".repeat(64)).await;
     let home = tempfile::tempdir().expect("temp dir");
     let installed = Installed::copy_of_this_build();
 
@@ -171,8 +217,24 @@ async fn update_refuses_a_release_whose_checksum_does_not_match() {
 #[tokio::test]
 async fn update_refuses_a_release_that_reports_another_version() {
     let server = MockServer::start().await;
-    let binary = fake_binary("0.0.1");
-    serve_release(&server, &binary, &sha256_hex(&binary)).await;
+    let release = Release::printing("0.0.1");
+    serve_release(&server, &release, &release.digest()).await;
+    let home = tempfile::tempdir().expect("temp dir");
+    let installed = Installed::copy_of_this_build();
+
+    let output = installed.run(home.path(), &server, &["update"]);
+
+    assert!(!output.status.success(), "{output:?}");
+    assert!(stderr_of(&output).contains("kept the current one"), "{output:?}");
+    assert_eq!(installed.contents(), installed.original);
+    assert_eq!(installed.entries(), [EXECUTABLE_NAME]);
+}
+
+#[tokio::test]
+async fn update_refuses_an_archive_without_the_executable() {
+    let server = MockServer::start().await;
+    let release = Release::without_executable();
+    serve_release(&server, &release, &release.digest()).await;
     let home = tempfile::tempdir().expect("temp dir");
     let installed = Installed::copy_of_this_build();
 
@@ -187,8 +249,8 @@ async fn update_refuses_a_release_that_reports_another_version() {
 #[tokio::test]
 async fn update_check_reports_a_newer_release_without_downloading_it() {
     let server = MockServer::start().await;
-    let binary = fake_binary(NEWER_VERSION);
-    serve_release(&server, &binary, &sha256_hex(&binary)).await;
+    let release = Release::printing(NEWER_VERSION);
+    serve_release(&server, &release, &release.digest()).await;
     let home = tempfile::tempdir().expect("temp dir");
     let installed = Installed::copy_of_this_build();
 
@@ -216,8 +278,8 @@ async fn update_check_reports_a_newer_release_without_downloading_it() {
 #[tokio::test]
 async fn update_restarts_an_installed_background_service_on_the_new_binary() {
     let server = MockServer::start().await;
-    let binary = fake_binary(NEWER_VERSION);
-    serve_release(&server, &binary, &sha256_hex(&binary)).await;
+    let release = Release::printing(NEWER_VERSION);
+    serve_release(&server, &release, &release.digest()).await;
     let (home, _) = paired_home("http://localhost:3000");
     let services = home.path().join(SERVICE_FOLDER);
     fs::create_dir_all(&services).expect("service folder");

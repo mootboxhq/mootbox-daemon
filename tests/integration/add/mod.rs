@@ -144,6 +144,7 @@ pub fn checkout_repository(name: &str, remote: &str) -> Folder {
 
 fn options(server: &MockServer, directory: &Path) -> AddOptions {
     AddOptions {
+        workspace: None,
         mootbox_url: Some(Url::parse(&server.uri()).expect("URL")),
         project: None,
         new_workspace: false,

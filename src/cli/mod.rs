@@ -61,6 +61,12 @@ enum DaemonCommand {
     Add {
         #[arg(long, help = "Mootbox server URL [default: the one this computer is paired with]")]
         mootbox_url: Option<Url>,
+        #[arg(
+            long,
+            value_name = "WORKSPACE_ID",
+            help = "Connect to this workspace, pairing it if needed"
+        )]
+        workspace: Option<Uuid>,
         #[arg(long, value_name = "PROJECT_ID", help = "Connect to this project without asking")]
         project: Option<Uuid>,
         #[arg(long, help = "Pair this computer with another workspace on the same Mootbox server")]
@@ -134,6 +140,7 @@ async fn execute(command: DaemonCommand) -> Result<Output> {
     match command {
         DaemonCommand::Add {
             mootbox_url,
+            workspace,
             project,
             new_workspace,
             foreground,
@@ -141,6 +148,7 @@ async fn execute(command: DaemonCommand) -> Result<Output> {
         } => {
             let request = AddRequest {
                 options: AddOptions {
+                    workspace,
                     mootbox_url,
                     project,
                     new_workspace,

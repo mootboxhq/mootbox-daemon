@@ -1,4 +1,4 @@
-use std::fs::Permissions;
+use std::fs::{self, Permissions};
 use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
@@ -9,12 +9,13 @@ use tempfile::TempPath;
 
 use super::Output;
 use super::service::{self, ServiceEnvironment};
-use crate::release::{self, CHECKSUMS_ASSET, ReleaseSource, Version};
+use crate::release::{self, ARCHIVED_EXECUTABLE, CHECKSUMS_ASSET, ReleaseSource, Version};
 use crate::service::ServiceHost;
 
 const STAGED_PREFIX: &str = ".mootbox-update-";
 const EXECUTABLE_MODE: u32 = 0o755;
 const VERSION_FLAG: &str = "--version";
+const TAR_PROGRAM: &str = "tar";
 
 struct InstalledService {
     host: ServiceHost,
@@ -43,11 +44,13 @@ pub async fn apply(home: &Path) -> Result<Output> {
 
     let checksums = String::from_utf8(source.download(latest, CHECKSUMS_ASSET).await?)
         .with_context(|| format!("{CHECKSUMS_ASSET} of mootbox {latest} is not text"))?;
-    let binary = source.download(latest, &asset).await?;
-    release::verify_checksum(&checksums, &asset, &binary)?;
+    let archive = source.download(latest, &asset).await?;
+    release::verify_checksum(&checksums, &asset, &archive)?;
 
     let service = installed_service()?;
-    replace_executable(&current_executable()?, &binary, latest)?;
+    let executable = current_executable()?;
+    let binary = unpack_executable(folder_of(&executable)?, &asset, &archive)?;
+    replace_executable(&executable, &binary, latest)?;
 
     let mut output = Output::lines(vec![format!("updated mootbox {current} → {latest}")]);
     if let Some(service) = service {
@@ -89,11 +92,51 @@ fn restart(home: &Path, service: InstalledService, output: &mut Output) {
     }
 }
 
-fn replace_executable(executable: &Path, binary: &[u8], version: Version) -> Result<()> {
-    let directory = executable
+fn folder_of(executable: &Path) -> Result<&Path> {
+    executable
         .parent()
-        .with_context(|| format!("{} has no parent folder", executable.display()))?;
-    let staged = stage(directory, binary)?;
+        .with_context(|| format!("{} has no parent folder", executable.display()))
+}
+
+fn unpack_executable(directory: &Path, asset: &str, archive: &[u8]) -> Result<Vec<u8>> {
+    let unpacked = tempfile::Builder::new()
+        .prefix(STAGED_PREFIX)
+        .tempdir_in(directory)
+        .with_context(|| format!("cannot write to {}", directory.display()))?;
+    let archive_path = unpacked.path().join(asset);
+    fs::write(&archive_path, archive).with_context(|| format!("cannot write {}", archive_path.display()))?;
+    extract_executable(&archive_path, unpacked.path(), asset)?;
+    read_extracted_executable(&unpacked.path().join(ARCHIVED_EXECUTABLE), asset)
+}
+
+fn extract_executable(archive_path: &Path, destination: &Path, asset: &str) -> Result<()> {
+    let ran = Command::new(TAR_PROGRAM)
+        .arg("-xzf")
+        .arg(archive_path)
+        .arg("-C")
+        .arg(destination)
+        .arg(ARCHIVED_EXECUTABLE)
+        .output()
+        .with_context(|| format!("cannot run {TAR_PROGRAM} to unpack {asset}"))?;
+    if !ran.status.success() {
+        bail!(
+            "cannot unpack {ARCHIVED_EXECUTABLE} from {asset}: {}; kept the current one",
+            String::from_utf8_lossy(&ran.stderr).trim()
+        );
+    }
+    Ok(())
+}
+
+fn read_extracted_executable(extracted: &Path, asset: &str) -> Result<Vec<u8>> {
+    let is_regular_file = fs::symlink_metadata(extracted).is_ok_and(|metadata| metadata.is_file());
+    if !is_regular_file {
+        bail!("{asset} has no {ARCHIVED_EXECUTABLE} executable; kept the current one");
+    }
+    fs::read(extracted).with_context(|| format!("cannot read {}", extracted.display()))
+}
+
+fn replace_executable(executable: &Path, binary: &[u8], version: Version) -> Result<()> {
+    let staged = stage(folder_of(executable)?, binary)?;
     confirm_version(&staged, version)?;
     staged
         .persist(executable)

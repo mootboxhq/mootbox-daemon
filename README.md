@@ -100,7 +100,18 @@ It builds the daemon and runs `scripts/mvp-smoke.mjs` in the main repository aga
 
 Bump `version` in `Cargo.toml` and merge to `main`; CI publishes `v<version>` to [mootbox-daemon releases](https://github.com/mootboxhq/mootbox-daemon/releases). A push whose version already has a release publishes nothing.
 
-Each release carries `mootbox-x86_64-unknown-linux-musl`, `mootbox-aarch64-unknown-linux-musl`, `mootbox-x86_64-apple-darwin`, `mootbox-aarch64-apple-darwin` and a `SHA256SUMS` file in `sha256sum` format. The latest assets download from `https://github.com/mootboxhq/mootbox-daemon/releases/latest/download/<asset>`.
+Each release carries one archive per platform and a `SHA256SUMS` file in `sha256sum` format covering them:
+
+| Platform | Asset | Built for |
+| --- | --- | --- |
+| macOS Apple silicon | `mootbox-macos-arm64.tar.gz` | `aarch64-apple-darwin` |
+| macOS Intel | `mootbox-macos-x64.tar.gz` | `x86_64-apple-darwin` |
+| Linux x86_64 and Windows via WSL2 | `mootbox-linux-x64.tar.gz` | `x86_64-unknown-linux-musl` |
+| Linux ARM64 | `mootbox-linux-arm64.tar.gz` | `aarch64-unknown-linux-musl` |
+
+Each archive holds `mootbox` (mode `0755`) and `README.md` at its top level, so `tar -xzf mootbox-<os>-<arch>.tar.gz` yields `mootbox` directly. Asset names carry no version, so the latest ones download from `https://github.com/mootboxhq/mootbox-daemon/releases/latest/download/<asset>`.
+
+v0.1.0 shipped bare binaries named by target triple, so `mootbox update` on v0.1.0 cannot update itself to v0.1.1 or later. Reinstall it with `curl -fsSL https://mootbox.zbib.dev/install | sh`.
 
 ## Contract refresh
 

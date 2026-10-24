@@ -4,6 +4,10 @@ use std::path::Path;
 use anyhow::{Context, Result, bail};
 use reqwest::Url;
 
+use super::checkout::{LocalCheckout, matched_remote};
+use crate::api::MootboxClient;
+use crate::contracts::{MatchRepositoriesRequest, MatchRepositoriesResponse};
+
 use super::{Adding, CONNECT_ANOTHER_WORKSPACE, NO_MOOTBOX_URL, WHICH_WORKSPACE, server_message};
 use crate::config::{DaemonConfig, WorkspaceProfile};
 use crate::pairing::{self, PairingRequest};
@@ -14,24 +18,56 @@ const PAIRED_PARAMETER: &str = "paired";
 const PAIRED_SEPARATOR: &str = ",";
 
 impl Adding<'_> {
-    pub(super) async fn chosen_profile(&self, config: &DaemonConfig, root: &Path) -> Result<WorkspaceProfile> {
+    pub(super) async fn chosen_profile(
+        &self,
+        config: &DaemonConfig,
+        checkout: &LocalCheckout,
+    ) -> Result<WorkspaceProfile> {
         let profiles: Vec<&WorkspaceProfile> = config
             .workspaces
             .iter()
             .filter(|profile| is_on_mootbox(profile, &self.mootbox_url))
             .collect();
+        if let Some(workspace_id) = self.options.workspace {
+            if let Some(profile) = profiles.iter().find(|profile| profile.workspace_id == workspace_id) {
+                return Ok((**profile).clone());
+            }
+            return self.pair(&profiles).await;
+        }
         if self.options.new_workspace || profiles.is_empty() {
+            return self.pair(&profiles).await;
+        }
+        if let Some(project_id) = self.options.project {
+            let request = MatchRepositoriesRequest {
+                remotes: checkout.remotes.iter().map(matched_remote).collect::<Result<_>>()?,
+            };
+            for profile in &profiles {
+                let client = MootboxClient::for_profile(profile)?;
+                let result = client.match_repository(&request).await.map_err(server_message)?;
+                let offers_project = match result {
+                    MatchRepositoriesResponse::One { match_ } => match_.project.id == project_id,
+                    MatchRepositoriesResponse::Many { matches } => {
+                        matches.iter().any(|found| found.project.id == project_id)
+                    }
+                    MatchRepositoriesResponse::None { registrable } => registrable
+                        .iter()
+                        .any(|team| team.projects.iter().any(|project| project.id == project_id)),
+                };
+                if offers_project {
+                    return Ok((*profile).clone());
+                }
+            }
+            self.console.show(
+                "This project is not in a workspace paired on this computer. Connect its workspace in the browser.",
+            );
             return self.pair(&profiles).await;
         }
         let connected: Vec<&WorkspaceProfile> = profiles
             .iter()
             .copied()
-            .filter(|profile| has_checkout(config, profile, root))
+            .filter(|profile| has_checkout(config, profile, &checkout.root))
             .collect();
         if let [only] = connected.as_slice() {
-            return Ok((*only).clone());
-        }
-        if let ([only], Some(_)) = (profiles.as_slice(), self.options.project) {
             return Ok((*only).clone());
         }
         let mut choices: Vec<String> = profiles.iter().map(|profile| profile.display_name()).collect();
@@ -49,13 +85,27 @@ impl Adding<'_> {
             device_name: &self.options.device_name,
             poll_interval: self.options.poll_interval,
         };
-        pairing::pair_device(&request, |started| {
-            self.console
-                .open_link(&confirm_link(&self.mootbox_url, &started.user_code, paired)?);
+        let profile = pairing::pair_device(&request, |started| {
+            let mut link = confirm_link(&self.mootbox_url, &started.user_code, paired)?;
+            if let Some(workspace_id) = self.options.workspace {
+                link.query_pairs_mut()
+                    .append_pair("workspace", &workspace_id.to_string());
+            }
+            self.console.open_link(&link);
             Ok(())
         })
         .await
-        .map_err(server_message)
+        .map_err(server_message)?;
+        if self
+            .options
+            .workspace
+            .is_some_and(|workspace_id| workspace_id != profile.workspace_id)
+        {
+            bail!(
+                "The device was paired with a different workspace. Run this project's setup command again and choose its workspace."
+            );
+        }
+        Ok(profile)
     }
 }
 

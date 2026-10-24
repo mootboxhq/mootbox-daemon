@@ -69,16 +69,21 @@ jobs:
       matrix:
         include:
           - target: x86_64-unknown-linux-musl
+            asset: mootbox-linux-x64.tar.gz
             os: ubuntu-24.04
           - target: aarch64-unknown-linux-musl
+            asset: mootbox-linux-arm64.tar.gz
             os: ubuntu-24.04-arm
           - target: x86_64-apple-darwin
+            asset: mootbox-macos-x64.tar.gz
             os: macos-14
           - target: aarch64-apple-darwin
+            asset: mootbox-macos-arm64.tar.gz
             os: macos-14
     runs-on: ${{ matrix.os }}
     env:
       TARGET: ${{ matrix.target }}
+      ASSET: ${{ matrix.asset }}
       VERSION: ${{ needs.plan.outputs.version }}
     steps:
       - uses: actions/checkout@v4
@@ -97,20 +102,28 @@ jobs:
           key: ${{ matrix.target }}
       - name: Build
         run: cargo build --release --locked --target "$TARGET"
-      - name: Name the asset
-        run: cp "target/$TARGET/release/mootbox" "mootbox-$TARGET"
-      - name: Smoke-run the asset
+      - name: Smoke-run the binary
         run: |
-          printed="$("./mootbox-$TARGET" --version)"
+          printed="$("target/$TARGET/release/mootbox" --version)"
           if [ "$printed" != "mootbox $VERSION" ]; then
-            echo "::error::mootbox-$TARGET printed '$printed', expected 'mootbox $VERSION'"
+            echo "::error::the $TARGET build printed '$printed', expected 'mootbox $VERSION'"
             exit 1
           fi
           echo "$printed"
+      - name: Package the archive
+        run: |
+          rm -rf staging
+          mkdir staging
+          cp "target/$TARGET/release/mootbox" staging/mootbox
+          cp README.md staging/README.md
+          chmod 0755 staging/mootbox
+          chmod 0644 staging/README.md
+          COPYFILE_DISABLE=1 tar -czf "$ASSET" -C staging mootbox README.md
+          tar -tzvf "$ASSET"
       - uses: actions/upload-artifact@v4
         with:
-          name: mootbox-${{ matrix.target }}
-          path: mootbox-${{ matrix.target }}
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
           if-no-files-found: error
 
   publish:
@@ -123,12 +136,57 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: mootbox-*
+          pattern: mootbox-*.tar.gz
           merge-multiple: true
       - name: Write SHA256SUMS
         run: |
-          sha256sum mootbox-* > SHA256SUMS
+          sha256sum mootbox-*.tar.gz > SHA256SUMS
           cat SHA256SUMS
+      - name: Write the release notes
+        run: |
+          printf 'mootbox %s runs your own signed-in Claude Code or Codex for the Mootbox chats you start.\n\n' "$TAG" > notes.md
+          cat >> notes.md <<'NOTES'
+          ## Install
+
+          Run inside the git repository you want to connect. It installs `mootbox` to `~/.mootbox/bin` and connects the repository:
+
+          ```sh
+          curl -fsSL https://mootbox.zbib.dev/install | sh
+          ```
+
+          Already installed? Update in place:
+
+          ```sh
+          mootbox update
+          ```
+
+          ## Downloads
+
+          | Platform | File |
+          | --- | --- |
+          | macOS Apple silicon | `mootbox-macos-arm64.tar.gz` |
+          | macOS Intel | `mootbox-macos-x64.tar.gz` |
+          | Linux x86_64 and Windows via WSL2 | `mootbox-linux-x64.tar.gz` |
+          | Linux ARM64 | `mootbox-linux-arm64.tar.gz` |
+
+          Each archive holds the `mootbox` executable and `README.md`.
+
+          ## Verify
+
+          Download `SHA256SUMS` next to the archive, then on Linux:
+
+          ```sh
+          sha256sum -c --ignore-missing SHA256SUMS
+          ```
+
+          or on macOS:
+
+          ```sh
+          shasum -a 256 -c --ignore-missing SHA256SUMS
+          ```
+
+          NOTES
+          cat notes.md
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -137,5 +195,6 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "mootbox $TAG" \
-            --notes "mootbox $TAG built from $GITHUB_REPOSITORY@$GITHUB_SHA." \
-            mootbox-* SHA256SUMS
+            --notes-file notes.md \
+            --generate-notes \
+            mootbox-*.tar.gz SHA256SUMS

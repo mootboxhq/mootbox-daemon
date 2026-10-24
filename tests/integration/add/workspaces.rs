@@ -151,3 +151,100 @@ async fn an_expired_pairing_shows_the_server_message() {
     assert_eq!(error.to_string(), "pairing expired");
     assert!(!config::config_path(home.path()).exists());
 }
+
+#[tokio::test]
+async fn explicit_project_pairs_its_workspace_instead_of_reusing_the_old_one() {
+    let server = MockServer::start().await;
+    let (home, before) = paired_home(&server.uri());
+    let repository = checkout_repository("checkout", ORIGIN);
+    let project_id = Uuid::new_v4();
+    authenticated_route("POST", MATCH_ROUTE)
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "kind": "none", "registrable": [] })))
+        .mount(&server)
+        .await;
+    let paired = paired_profile(&server);
+    wiremock::Mock::given(wiremock::matchers::method("POST"))
+        .and(wiremock::matchers::path(MATCH_ROUTE))
+        .and(wiremock::matchers::header(
+            "authorization",
+            format!("Bearer {}", paired.credential),
+        ))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(
+                json!({ "kind": "one", "match": repo_match(Uuid::new_v4(), project_id, "New project") }),
+            ),
+        )
+        .with_priority(1)
+        .mount(&server)
+        .await;
+    mount_pairing(&server).await;
+    mount_connection(&server, Uuid::new_v4()).await;
+    let console = ScriptedConsole::default();
+    let mut request = options(&server, &repository.path);
+    request.project = Some(project_id);
+    let report = add::connect(home.path(), request, &console)
+        .await
+        .expect("connects the requested workspace");
+    assert_eq!(report.workspace_id, paired.workspace_id);
+    assert_eq!(report.project_name, "New project");
+    assert_eq!(saved(home.path()).workspaces[0], before.workspaces[0]);
+    assert_eq!(console.links().len(), 1);
+}
+
+#[tokio::test]
+async fn explicit_workspace_pairs_only_the_requested_workspace() {
+    let server = MockServer::start().await;
+    let (home, before) = paired_home(&server.uri());
+    let repository = checkout_repository("checkout", ORIGIN);
+    let paired = paired_profile(&server);
+    let project_id = Uuid::new_v4();
+    mount_pairing(&server).await;
+    mount_match(
+        &server,
+        json!({ "kind": "one", "match": repo_match(Uuid::new_v4(), project_id, "New project") }),
+    )
+    .await;
+    mount_connection(&server, Uuid::new_v4()).await;
+    let console = ScriptedConsole::default();
+    let mut request = options(&server, &repository.path);
+    request.project = Some(project_id);
+    request.workspace = Some(paired.workspace_id);
+    let report = add::connect(home.path(), request, &console)
+        .await
+        .expect("pairs the requested workspace");
+    assert_eq!(report.workspace_id, paired.workspace_id);
+    assert_eq!(saved(home.path()).workspaces[0], before.workspaces[0]);
+    assert!(
+        console.links()[0]
+            .query_pairs()
+            .any(|(key, value)| key == "workspace" && value == paired.workspace_id.to_string())
+    );
+}
+
+#[tokio::test]
+async fn explicit_workspace_wins_over_an_existing_checkout_in_another_workspace() {
+    let server = MockServer::start().await;
+    let (home, mut before) = paired_home(&server.uri());
+    let repository = checkout_repository("checkout", ORIGIN);
+    let target = paired_profile(&server);
+    crate::common::connect_checkout(&mut before, Uuid::new_v4(), repository.path.clone());
+    before.upsert_workspace(target.clone());
+    config::save(home.path(), &before).expect("saves both workspaces");
+    let project_id = Uuid::new_v4();
+    mount_match(
+        &server,
+        json!({ "kind": "one", "match": repo_match(Uuid::new_v4(), project_id, "Target project") }),
+    )
+    .await;
+    mount_connection(&server, Uuid::new_v4()).await;
+    let console = ScriptedConsole::default();
+    let mut request = options(&server, &repository.path);
+    request.project = Some(project_id);
+    request.workspace = Some(target.workspace_id);
+    let report = add::connect(home.path(), request, &console)
+        .await
+        .expect("uses explicit workspace");
+    assert_eq!(report.workspace_id, target.workspace_id);
+    assert_eq!(console.questions(), Vec::<(String, Vec<String>)>::new());
+    assert_eq!(console.links(), Vec::<Url>::new());
+}

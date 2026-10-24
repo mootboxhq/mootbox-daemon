@@ -48,6 +48,7 @@ const ONLINE_SUBJECT: &str = "This computer is online";
 const STOP_HINT: &str = "Ctrl+C to stop";
 
 pub struct AddOptions {
+    pub workspace: Option<Uuid>,
     pub mootbox_url: Option<Url>,
     pub project: Option<Uuid>,
     pub new_workspace: bool,
@@ -137,7 +138,7 @@ pub async fn connect(home: &Path, options: AddOptions, console: &dyn Console) ->
         console,
     };
     let mut config = saved.clone();
-    let profile = adding.chosen_profile(&config, &checkout.root).await?;
+    let profile = adding.chosen_profile(&config, &checkout).await?;
     if !config.workspaces.contains(&profile) {
         config.upsert_workspace(profile.clone());
         config::save(home, &config)?;
