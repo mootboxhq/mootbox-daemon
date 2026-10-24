@@ -166,7 +166,8 @@ async fn update_verifies_a_zip_and_replaces_a_running_native_executable() {
     let digest: String = Sha256::digest(&bytes)
         .iter()
         .map(|byte| format!("{byte:02x}"))
-        .collect();
+        .collect::<Vec<_>>()
+        .concat();
     let sums = format!("{digest}  mootbox-windows-x64.zip\n");
     let server = MockServer::start().await;
     Mock::given(method("GET"))
